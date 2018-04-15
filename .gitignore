@@ -36,6 +36,12 @@
 *.x86_64
 *.hex
 
+# mc stuff
+*.eep
+*.lss
+*.lst
+*.sym
+
 # Debug files
 *.dSYM/
 *.su
