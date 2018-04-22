@@ -1,4 +1,4 @@
-# OdroidUart
+# OdroidUart [![Build Status](https://travis-ci.org/LuTri/OdroidUart.svg?branch=master)](https://travis-ci.org/LuTri/OdroidUart)
 
 ## Motivation
 

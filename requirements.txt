@@ -6,3 +6,4 @@ flake8-per-file-ignores==0.6
 flake8-polyfill==1.0.2
 pep8-naming==0.5.0
 pyserial==3.4
+tox==3.0.0
