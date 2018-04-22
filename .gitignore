@@ -66,3 +66,7 @@ pip-selfcheck.json
 local/
 include/
 lib/
+
+# tox tests
+.tox/
+.pytest-cache/
