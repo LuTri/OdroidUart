@@ -6,6 +6,7 @@
 *.ko
 *.obj
 *.elf
+*.pyc
 
 # Linker output
 *.ilk
@@ -56,3 +57,12 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# virtualenv / pip stuff
+bin/
+include/
+share/
+pip-selfcheck.json
+local/
+include/
+lib/
