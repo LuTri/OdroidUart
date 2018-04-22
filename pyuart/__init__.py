@@ -26,11 +26,15 @@ def benchmark(func):
         start = time.time()
         value = func(self, *args, **kwargs)
         end = time.time()
+
+        n_bytes = len(value)
+
         runtime = end - start
         if self.logger:
-            msg = 'The runtime for {func} took {time} seconds to complete'
-            self.logger.info(msg.format(func=func.__name__,
-                             time=runtime))
+            msg = 'The runtime for {:20s} completed with {:7.3f} Kb/s'
+            self.logger.info(
+                msg.format(func.__name__, (n_bytes / 1000.0) / runtime),
+            )
         return value
     return function_timer
 
@@ -94,6 +98,7 @@ class UART(serial.Serial):
                 'Transmission failed! expected {}, got {} instead!'.format(
                     hex(expected_checksum), hex(gotten_checksum)),
             )
+        return string
 
     @benchmark
     def read_whole(self):
