@@ -26,7 +26,6 @@
 #ifndef BAUD
 #define BAUD 500000UL
 #endif
-#pragma message(VAR_NAME_VALUE(BAUD))
 
 #define STATUS_BUFFER_SIZE 200
 

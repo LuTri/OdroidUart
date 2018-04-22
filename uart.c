@@ -139,10 +139,8 @@ void uart_setup(void) {
     // Frame Format: Asynchron 8bit 1 stopbits even parity
     UCSR0C = (1 << UPM01) | (1 << UCSZ01) | (1 << UCSZ00);
 #if USE_2X
-#pragma message "Using Double Speed Operation"
     UCSR0A |= (1 << U2X0);
 #else
-#pragma message "Using Single Speed Operation"
     UCSR0A &= ~(1 << U2X0);
 #endif
 }
