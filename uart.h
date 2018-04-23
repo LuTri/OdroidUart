@@ -29,9 +29,59 @@
 
 #define STATUS_BUFFER_SIZE 200
 
+#ifndef UNITTEST
 #include <util/setbaud.h>
 
 #include <avr/io.h>
+#else
+// Mock registers and defines while in unittest
+typedef unsigned char uint8_t;
+typedef unsigned long uint16_t;
+
+extern uint8_t UCSR0A;
+extern uint8_t UCSR0B;
+extern uint8_t UCSR0C;
+extern uint8_t UDR0;
+extern uint8_t UBRR0H;
+extern uint8_t UBRR0L;
+// Control register A bits
+
+#define RXC0 7
+#define TXC0 6
+#define UDRE0 5
+#define FE0 4
+#define DOR0 3
+#define UPE0 2
+#define U2X0 1
+#define MPCM0 0
+
+// Control register B bits
+
+#define RXCIE0 7
+#define TXCIE0 6
+#define UDRIE0 5
+#define RXEN0 4
+#define TXEN0 3
+#define UCSZ02 2
+#define RXB80 1
+#define TXB80 0
+
+// Control registers C bits
+
+#define UMSEL01 7
+#define UMSEL00 6
+#define UPM01 5
+#define UPM00 4
+#define USBS0 3
+#define UCSZ01 2
+#define UCSZ00 1
+#define UCPOL0 0
+
+// Mock BAUD values
+
+#define UBRRH_VALUE 0xF0
+#define UBRRL_VALUE 0x0F
+#endif
 
 void uart_setup(void);
 

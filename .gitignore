@@ -37,6 +37,8 @@
 *.x86_64
 *.hex
 
+unittest
+
 # mc stuff
 *.eep
 *.lss

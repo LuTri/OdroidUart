@@ -17,7 +17,16 @@
  */
 
 #include "uart.h"
-#include <avr/io.h>
+
+#ifdef UNITTEST
+// Mock registers and defines while in unittest
+uint8_t UCSR0A = 0;
+uint8_t UCSR0B = 0;
+uint8_t UCSR0C = 0;
+uint8_t UDR0 = 0;
+uint8_t UBRR0H = 0;
+uint8_t UBRR0L = 0;
+#endif
 
 uint8_t UART_STATI[STATUS_BUFFER_SIZE] = {0};
 uint8_t uart_status_idx = 0;

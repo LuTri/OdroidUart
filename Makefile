@@ -21,6 +21,10 @@ TARGET = uart
 # List C source files here. (C dependencies are automatically generated.)
 SRC = $(TARGET).c
 
+UNIT_TARGET = unittest
+
+UNIT_SRCS = $(UNIT_TARGET).c $(SRC)
+
 # Optimization level, can be [0, 1, 2, 3, s].
 # 0 = turn off optimization. s = optimize for size.
 # (Note: 3 is not always the best optimization level. See avr-libc FAQ.)
@@ -51,7 +55,6 @@ CFLAGS += $(CDEFS) $(CINCS)
 CFLAGS += -O$(OPT)
 CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 CFLAGS += -Wall -Wstrict-prototypes
-CFLAGS += -Wa,-adhlns=$(<:.c=.lst)
 CFLAGS += $(CSTANDARD)
 CFLAGS += -DF_OSC=$(F_OSC)
 CFLAGS += -DF_CPU=$(F_OSC)
@@ -59,6 +62,7 @@ CFLAGS += -DBAUD=$(BAUD)
 
 # Define programs and commands.
 CC = avr-gcc
+GCC = gcc
 REMOVE = rm -f
 
 # Define Messages
@@ -76,6 +80,9 @@ MSG_CLEANING = Cleaning project:
 
 # Define all object files.
 OBJ = $(SRC:.c=.o) $(ASRC:.S=.o)
+
+# Define all object files.
+UNIT_OBJ = $(UNIT_SRCS:.c=.o)
 
 # Define all listing files.
 LST = $(ASRC:.S=.lst) $(SRC:.c=.lst)
@@ -125,11 +132,20 @@ clean_list :
 	@echo
 	@echo $(MSG_CLEANING)
 	$(REMOVE) $(OBJ)
-	$(REMOVE) $(LST)
 
 # Include the dependency files.
 -include $(shell mkdir .dep 2>/dev/null) $(wildcard .dep/*)
 
+unittest : CC=$(GCC)
+unittest : ALL_CFLAGS = $(CFLAGS) -DUNITTEST
+unittest : $(UNIT_OBJ)
+	$(GCC) $(UNIT_OBJ) -o $@
+	./unittest
+uart.o: .FORCE
+
+.PHONY: .FORCE
+.FORCE:
+
 # Listing of phony targets.
 .PHONY : all begin finish end sizebefore sizeafter gccversion \
-build elf hex eep lss sym coff extcoff clean clean_list
+build elf hex eep lss sym coff extcoff clean clean_list unittest
