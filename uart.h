@@ -34,16 +34,22 @@
 
 #include <avr/io.h>
 #else
+#ifdef MOCKING
+#include "mockserial/mockregisters.h"
+#endif
+
 // Mock registers and defines while in unittest
+#ifndef MOCKING
 typedef unsigned char uint8_t;
+#endif
 typedef unsigned long uint16_t;
 
 extern uint8_t UCSR0A;
 extern uint8_t UCSR0B;
 extern uint8_t UCSR0C;
-extern uint8_t UDR0;
 extern uint8_t UBRR0H;
 extern uint8_t UBRR0L;
+extern uint8_t UDR0;
 // Control register A bits
 
 #define RXC0 7

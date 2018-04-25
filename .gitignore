@@ -38,6 +38,7 @@
 *.hex
 
 unittest
+mockserial/mock
 
 # mc stuff
 *.eep

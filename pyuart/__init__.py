@@ -30,7 +30,7 @@ def benchmark(func):
         n_bytes = len(value)
 
         runtime = end - start
-        if self.logger:
+        if self.logger:  # pragma: no cover
             msg = 'The runtime for {:20s} completed with {:7.3f} Kb/s'
             self.logger.info(
                 msg.format(func.__name__, (n_bytes / 1000.0) / runtime),
@@ -81,19 +81,21 @@ class UART(serial.Serial):
     def write_string(self, string):
         expected_checksum = self.fletcher_checksum(string)
         self.write(string)
-        while self.out_waiting:
+        while self.out_waiting:  # pragma: no cover
             pass
 
-        self.write('\0')  # Signal string.end
+        self.write(b'\0')  # Signal string.end
+        while self.out_waiting:  # pragma: no cover
+            pass
 
         gotten_checksum = self.string_to_uint8_array(self.read(2))
         self.read(1)  # ommit string end
         try:
             gotten_checksum = (gotten_checksum[0] << 8) | gotten_checksum[1]
-        except IndexError:
+        except IndexError:  # pragma: no cover
             raise UartError('Checksum receival failed.')
 
-        if hex(expected_checksum) != hex(gotten_checksum):
+        if hex(expected_checksum) != hex(gotten_checksum):  # pragma: no cover
             raise UartError(
                 'Transmission failed! expected {}, got {} instead!'.format(
                     hex(expected_checksum), hex(gotten_checksum)),
@@ -103,8 +105,8 @@ class UART(serial.Serial):
     @benchmark
     def read_whole(self):
         res = self.read(1)
-        while self.in_waiting and '\0' not in res:
-            if self.logger:
+        while self.in_waiting and b'\0' not in res:
+            if self.logger:  # pragma: no cover
                 self.logger.info(
                     '{} bytes are waiting for us...'.format(self.in_waiting),
                 )

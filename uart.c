@@ -20,12 +20,16 @@
 
 #ifdef UNITTEST
 // Mock registers and defines while in unittest
-uint8_t UCSR0A = 0;
 uint8_t UCSR0B = 0;
 uint8_t UCSR0C = 0;
-uint8_t UDR0 = 0;
 uint8_t UBRR0H = 0;
 uint8_t UBRR0L = 0;
+
+#ifndef MOCKING
+uint8_t UCSR0A = 0;
+uint8_t UDR0 = 0;
+#endif
+#include <stdio.h>
 #endif
 
 uint8_t UART_STATI[STATUS_BUFFER_SIZE] = {0};
@@ -62,6 +66,9 @@ uint8_t _blocking_has_incoming(void) {
 uint8_t _uart_write_char(CONDITION_FNC condition, char character) {
     if ((*condition)()) {
         UDR0 = character;
+#ifdef MOCKING
+        read_next();
+#endif
         return 1;
     }
     return 0;
@@ -84,6 +91,9 @@ uint16_t _uart_write_string(CONDITION_FNC condition, char* string) {
 char _uart_read_char(CONDITION_FNC condition) {
     if ((*condition)()) {
         uart_save_status();
+#ifdef MOCKING
+        write_next();
+#endif
         return UDR0;
     }
     return '\0';
