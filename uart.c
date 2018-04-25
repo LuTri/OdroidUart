@@ -93,7 +93,6 @@ uint16_t _uart_read_string(CONDITION_FNC condition, char* buffer,
                            uint16_t buffer_size) {
     uint16_t checksum_binary;
     CONDITION_FNC write_cond;
-    char checksum[3] = {'\0'};
 
     char* start = buffer;
 
@@ -116,10 +115,9 @@ uint16_t _uart_read_string(CONDITION_FNC condition, char* buffer,
     /* Calculate checksum and write it to UART */
     checksum_binary = fletchers_checksum(start);
 
-    checksum[0] = (checksum_binary >> 8);
-    checksum[1] = (checksum_binary & 0xff);
-
-    _uart_write_string(write_cond, checksum);
+    _uart_write_char(write_cond, checksum_binary >> 8);
+    _uart_write_char(write_cond, checksum_binary & 0xff);
+    _uart_write_char(write_cond, '\0');
 
     /* return actually read num of bytes */
     return idx;
