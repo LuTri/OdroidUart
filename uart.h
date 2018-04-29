@@ -22,7 +22,6 @@
 /* Let AVR-libc validate BAUD rate and error */
 #define BAUD_TOL 1
 
-#include "utils.h"
 #ifndef BAUD
 #define BAUD 500000UL
 #endif

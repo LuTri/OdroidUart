@@ -57,9 +57,8 @@ def uart_pty():
 @pytest.fixture
 def messages():
     random.seed(time.time())
-    messages = [bytes(bytearray(x for x in range(1, 256)))]
-    messages += [bytes(bytearray([random.randint(1, 255)
-                 for x in range(random.randint(1, 200))])) for x in range(10)]
+    messages = [bytes(bytearray([random.randint(1, 255)
+                for x in range(random.randint(1, 200))])) for x in range(1000)]
 
     return messages
 
