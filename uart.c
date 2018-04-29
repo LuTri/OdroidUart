@@ -166,16 +166,16 @@ uint8_t uart_write_character(char character) {
     return _uart_write_char(_can_send, character);
 }
 
-uint8_t uart_blocking_write_character(char character) {
-    return _uart_write_char(_blocking_can_send, character);
+void uart_blocking_write_character(char character) {
+    _uart_write_char(_blocking_can_send, character);
 }
 
 uint16_t uart_write_string(char* string) {
     return _uart_write_string(_can_send, string);
 }
 
-uint16_t uart_blocking_write_string(char* string) {
-    return _uart_write_string(_blocking_can_send, string);
+void uart_blocking_write_string(char* string) {
+    _uart_write_string(_blocking_can_send, string);
 }
 
 char uart_read_character(void) { return _uart_read_char(_has_incoming); }

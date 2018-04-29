@@ -88,23 +88,67 @@ extern uint8_t UDR0;
 #define UBRRL_VALUE 0x0F
 #endif
 
+/*! @brief Initialze the UART interface. */
 void uart_setup(void);
 
-/* non-blocking interface */
+/*! @brief Write a single character over UART.
+ *
+ * This is the non-blocking variant; the byte is only written if the interface
+ * is currently available for transmission
+ * @return @c **1** on success, **0** on failure. */
+uint8_t uart_write_character(char character /*! payload */);
 
-uint8_t uart_write_character(char character);
-uint16_t uart_write_string(char* string);
+/*! @brief Write a complete string over UART.
+ *
+ * This is the non-blocking variant; the string is only written while is
+ * currently available for transmission. When the interface becomes unavailable
+ * inbetween, the transmission is aborted.
+ * @return @c the amount of bytes written. */
+uint16_t uart_write_string(char* string /*! payload */);
 
+/*! @brief Read a character over UART.
+ *
+ * This is the non-blocking variant; a byte is only read if currently a byte is
+ * available on the interface.
+ * @return @c the byte read, or \0 if none was available. */
 char uart_read_character(void);
-uint16_t uart_read_string(char* buffer, uint16_t buffer_size);
 
-/* blocking interface */
+/*! @brief Read a string over UART.
+ *
+ * Read a string over UART while bytes are available, the number of read bytes
+ * doesn't exceed the buffer's size or a \0 is encountered.
+ * @return @c the number of bytes read. */
+uint16_t uart_read_string(
+    char* buffer /*! buffer to write the characters to. */,
+    uint16_t buffer_size /*! size of the buffer. */);
 
-uint8_t uart_blocking_write_character(char character);
-uint16_t uart_blocking_write_string(char* string);
+/*! @brief Write a single character over UART.
+ *
+ * This is the blocking variant; the function does not return until the payload
+ * is written over UART. */
+void uart_blocking_write_character(char character /*! payload */);
 
+/*! @brief Write a complete string over UART.
+ *
+ * This is the blocking variant; the function does not return until the payload
+ * is completely written over UART. */
+void uart_blocking_write_string(char* string /*! payload */);
+
+/*! @brief Read a character over UART
+ *
+ * This is the blocking variant; this will not return before a character was
+ * transmitted over the UART interface.
+ * @return @c the character read. */
 char uart_blocking_read_character(void);
-uint16_t uart_blocking_read_string(char* buffer, uint16_t buffer_size);
+
+/*! @brief Read a string over UART.
+ *
+ * Read a string over UART while the number of read bytes doesn't exceed the
+ * buffer's size or a \0 is encountered.
+ * @return @c the number of bytes read. */
+uint16_t uart_blocking_read_string(
+    char* buffer /*! buffer to write the characters to. */,
+    uint16_t buffer_size /*! size of the buffer. */);
 
 extern uint8_t UART_STATI[STATUS_BUFFER_SIZE];
 extern uint8_t uart_status_idx;
