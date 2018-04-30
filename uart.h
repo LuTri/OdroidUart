@@ -153,7 +153,10 @@ uint16_t uart_blocking_read_string(
 extern uint8_t UART_STATI[STATUS_BUFFER_SIZE];
 extern uint8_t uart_status_idx;
 
-/* Utilities */
-
-uint16_t fletchers_checksum(char* string);
+/*! @brief Calculate the checksum for a string.
+ *
+ * Refer to https://en.wikipedia.org/wiki/Fletcher%27s_checksum for
+ * details on how the checksum is build..
+ * @return @c the 16bit checksum of the payload. */
+uint16_t fletchers_checksum(char* string /*! payload. */);
 #endif
