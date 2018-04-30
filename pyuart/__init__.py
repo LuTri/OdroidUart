@@ -15,8 +15,9 @@
 
 import logging
 import serial
-import struct
 import time
+
+from pyuart.utils import fletcher_checksum, string_to_uint8_array
 
 logging.basicConfig(level=logging.INFO)
 
@@ -64,22 +65,9 @@ class UART(serial.Serial):
         if self.isOpen():
             self.close()
 
-    def string_to_uint8_array(self, string):
-        return struct.unpack('B' * len(string), string)
-
-    def fletcher_checksum(self, string):
-        sum1 = sum2 = 0
-
-        values = self.string_to_uint8_array(string)
-        for x in values:
-            sum1 = (sum1 + x) % 255
-            sum2 = (sum2 + sum1) % 255
-
-        return (sum1 << 8) | sum2
-
     @benchmark
     def write_string(self, string):
-        expected_checksum = self.fletcher_checksum(string)
+        expected_checksum = fletcher_checksum(string)
         self.write(string)
         while self.out_waiting:  # pragma: no cover
             pass
@@ -88,7 +76,7 @@ class UART(serial.Serial):
         while self.out_waiting:  # pragma: no cover
             pass
 
-        gotten_checksum = self.string_to_uint8_array(self.read(2))
+        gotten_checksum = string_to_uint8_array(self.read(2))
         self.read(1)  # ommit string end
         try:
             gotten_checksum = (gotten_checksum[0] << 8) | gotten_checksum[1]
