@@ -26,7 +26,7 @@ void print_test_beauty(const char* name);
 void success_message(const char* name);
 void failure_message(const char* name);
 
-char compare_hex(uint8_t reg, uint8_t expected, const char* hint);
+char compare_hex(uint16_t reg, uint16_t expected, const char* hint);
 /*********************************
  * TEST FUNCTIONS *
  ********************************/
@@ -59,7 +59,7 @@ char test_fletcher_checksum(void) {
     const char* string[] = {
         "Test String 1", "BANANA",
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"};
-    uint16_t expected_checksums[] = {0x95, 0xae, 0x61};
+    uint16_t expected_checksums[] = {0x8c95, 0xa2ae, 0x1161};
 
     print_test_beauty(__FUNCTION__);
 
@@ -99,10 +99,10 @@ void failure_message(const char* name) {
 }
 
 /* comparison helpers */
-char compare_hex(uint8_t value, uint8_t expected, const char* hint) {
+char compare_hex(uint16_t value, uint16_t expected, const char* hint) {
     if (value != expected) {
-        printf("Expected 0x%x, got 0x%x. Hint: \"%s\"\n", expected, value,
-               hint);
+        printf("Expected 0x%x, got 0x%x. Hint: \"%s\"\n", (unsigned)expected,
+               (unsigned)value, hint);
         return 1;
     }
     return 0;
