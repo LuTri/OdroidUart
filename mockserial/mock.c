@@ -32,6 +32,7 @@ void binary_checksum_echo(int master) {
     char buff[MOCK_BUFFER];
     int size;
 
+    uint8_t status;
     char uart_buff[BUFF_SIZE];
     char uart_echo[3];
 
@@ -39,7 +40,7 @@ void binary_checksum_echo(int master) {
 
     write_to_buff_binary(buff, size);
 
-    uart_prot_read(uart_buff, BUFF_SIZE);
+    uart_prot_read(uart_buff, BUFF_SIZE, &status);
     read_from_buff(uart_echo);
 
     write(master, uart_echo, 2);

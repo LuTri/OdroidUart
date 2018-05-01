@@ -117,7 +117,13 @@ uint8_t has_incoming(void);
  * XX is the 16bit size of the frame's payload,
  * CS is the 16bit expected checksum of the frame's payload,
  * ddd... are the frame's payload.
+ *
+ * status will hold the following values, after the function finished:
+ * **0** on success, **1** when garbage was received, **2** when checksum-check
+ * failed.
  * @return @c **0** if the frame was errorneous, otherwise the number of
  * transfered bytes. */
-uint16_t uart_prot_read(uint8_t* buffer, uint16_t max_size);
+uint16_t uart_prot_read(uint8_t* buffer /*! buffer to hold the payload */,
+                        uint16_t max_size /*! size of the buffer */,
+                        uint8_t* status /*! register to store the status in */);
 #endif

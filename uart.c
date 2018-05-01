@@ -134,7 +134,7 @@ void uart_prot_answer(const char* msg) {
     _uart_write_char(_blocking_can_send, msg[1]);
 }
 
-uint16_t uart_prot_read(uint8_t* buffer, uint16_t max_size) {
+uint16_t uart_prot_read(uint8_t* buffer, uint16_t max_size, uint8_t* status) {
     /* frame format:
      * DATXXCSdddd...
      * DAT=header
@@ -150,6 +150,7 @@ uint16_t uart_prot_read(uint8_t* buffer, uint16_t max_size) {
         if ((garbage = _uart_read_char(_blocking_has_incoming)) != head[idx]) {
             /* Garbage received, we might as well return */
             uart_prot_answer(MSG_GARBAGE);
+            *status = 1;
             return 0;
         }
     }
@@ -164,9 +165,11 @@ uint16_t uart_prot_read(uint8_t* buffer, uint16_t max_size) {
     cmp_checksum = fletchers_binary(buffer, in_size);
     if (cmp_checksum != in_checksum) {
         uart_prot_answer(MSG_CHECKSUM_ERROR);
+        *status = 2;
         return 0;
     }
 
     uart_prot_answer(MSG_OK);
+    *status = 0;
     return in_size;
 }
