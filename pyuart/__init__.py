@@ -125,8 +125,16 @@ class UART(serial.Serial):
             raise UartOverflowError
         header = self.prepare_header(data)
 
+        if self.logger:
+            self.logger.info('Header:')
+            self.logger.info([hex(x) for x in bytearray(header)])
+
         if force_ce:
             data[0] = (data[0] + 1) % 255
+
+        if self.logger:
+            self.logger.info('Data:')
+            self.logger.info([hex(x) for x in bytearray(data)])
 
         self.write(header + data)
         while self.out_waiting:  # pragma: no cover
