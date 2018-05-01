@@ -105,6 +105,10 @@ extern uint8_t uart_status_idx;
  * @return @c the 16bit checksum of the payload. */
 uint16_t fletchers_binary(uint8_t* data, uint16_t length);
 
+/*! @brief Check if there incoming bytes over UART.
+ * @return @c **1** if bytes are available, **0** otherwise. */
+uint8_t has_incoming(void);
+
 /*! @brief perfrom a full frame read
  *
  * Attempt to read an UART-Frame of the following format:

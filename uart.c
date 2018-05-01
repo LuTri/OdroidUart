@@ -46,7 +46,7 @@ void uart_save_status(void) {
 /* non-blocking checks */
 uint8_t _can_send(void) { return UCSR0A & (1 << UDRE0); }
 
-uint8_t _has_incoming(void) { return UCSR0A & (1 << RXC0); }
+uint8_t has_incoming(void) { return UCSR0A & (1 << RXC0); }
 
 /* blocking checks */
 uint8_t _blocking_can_send(void) {
@@ -56,7 +56,7 @@ uint8_t _blocking_can_send(void) {
 }
 
 uint8_t _blocking_has_incoming(void) {
-    while (!(_has_incoming())) {
+    while (!(has_incoming())) {
 #ifdef MOCKING
 //        fprintf(stderr, "\n## NO INCOMING DATA! ##");
 #endif
