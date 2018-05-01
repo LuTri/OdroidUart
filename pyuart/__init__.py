@@ -13,6 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License
 
+import io
 import logging
 import os
 import serial
@@ -74,7 +75,7 @@ class UART(serial.Serial):
         defines = []
 
         # Read defines from uart.h
-        with open(instance._uart_h, "r", encoding="utf-8") as c_header:
+        with io.open(instance._uart_h, "rt") as c_header:
             raw = c_header.read().splitlines()
             defines = [x for x in raw if 'MSG_' in x or 'BUFFER_SIZE' in x]
         for define in defines:

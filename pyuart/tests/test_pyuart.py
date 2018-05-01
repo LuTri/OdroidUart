@@ -27,9 +27,7 @@ from pyuart import UART, UartError, UartOverflowError, UartChecksumError
 class CustomUProcess(subprocess.Popen):
     def __init__(self, *args, **kwargs):
         super(CustomUProcess, self).__init__(
-            *args, stdout=subprocess.PIPE, stdin=subprocess.PIPE,
-            **kwargs,
-        )
+            *args, stdout=subprocess.PIPE, stdin=subprocess.PIPE, **kwargs)
 
     def press_char(self, char=None):
         self.stdin.write(char + b'\n' if char else b'\n')
