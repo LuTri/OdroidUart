@@ -21,7 +21,7 @@ import random
 
 import pytest
 
-from pyuart import UART
+from pyuart import UART, UartError, UartOverflowError, UartChecksumError
 
 
 class CustomUProcess(subprocess.Popen):
@@ -31,53 +31,74 @@ class CustomUProcess(subprocess.Popen):
             **kwargs,
         )
 
-    def press_return(self):
-        self.stdin.write(b'\n')
+    def press_char(self, char=None):
+        self.stdin.write(char + b'\n' if char else b'\n')
         self.stdin.flush()
 
     def choke(self):
-        self.stdin.write(b'x\n')
-        self.stdin.flush()
+        self.press_char(b'x')
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def uart_pty():
+    uart_obj = UART(None, 500000, timeout=2)
+
     subprocess.check_output(['make', 'clean'], cwd='mockserial')
-    subprocess.check_output(['make'], cwd='mockserial')
+    subprocess.check_output(
+        ['make',
+         'UART_BUFFER_SIZE={}'.format(uart_obj.UART_BUFFER_SIZE)],
+        cwd='mockserial',
+    )
+
     process = CustomUProcess(['mockserial/mock'])
 
-    process.press_return()
+    process.press_char()
 
-    pty = process.stdout.readline().decode().strip()
-    yield process, pty
+    uart_obj.set_port(process.stdout.readline().decode().strip())
 
+    with uart_obj:
+        yield process, uart_obj
+
+    process.choke()
     process.terminate()
 
 
-@pytest.fixture
-def messages():
+@pytest.fixture(scope="session")
+def binary_messages(uart_pty):
+    _, uart = uart_pty
     random.seed(time.time())
-    messages = [bytes(bytearray([random.randint(1, 255)
-                for x in range(random.randint(1, 200))])) for x in range(1000)]
+    m = [bytes(bytearray([random.randint(0, 255)
+               for x in range(random.randint(1, uart.UART_BUFFER_SIZE))]))
+         for x in range(1000)]
 
-    return messages
+    return m
 
 
-def test_mocker(uart_pty, messages):
-    process, pty = uart_pty
-    uart_obj = UART(pty, 500000, timeout=2)
-    with uart_obj:
-        process.press_return()
-        result = uart_obj.read_whole()
+def test_protocol_write(uart_pty, binary_messages):
+    process, uart = uart_pty
+    try:
+        for t in binary_messages:
+            process.press_char(b'b')
+            uart.write_data(t)
+    except UartError as e:
+        print('Error on:')
+        print(t)
+        raise e
 
-        assert result == b'Hello Python!'
 
-        try:
-            for t in messages:  # test fletcher-checksum-echoing
-                process.press_return()
-                uart_obj.write_string(t)
-            process.choke()
-        except Exception as e:
-            print('Error on:')
-            print(t)
-            raise e
+def test_overflow_error(uart_pty):
+    process, uart = uart_pty
+    msg = bytearray([1] * (uart.UART_BUFFER_SIZE + 1))
+
+    process.press_char(b'b')
+    with pytest.raises(UartOverflowError):
+        uart.write_data(msg)
+
+
+def test_checksum_error(uart_pty):
+    process, uart = uart_pty
+    msg = bytearray([1] * (10))
+
+    process.press_char(b'b')
+    with pytest.raises(UartChecksumError):
+        uart.write_data(msg, True)
