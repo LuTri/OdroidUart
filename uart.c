@@ -32,7 +32,7 @@ uint8_t UDR0 = 0;
 #include <stdio.h>
 #endif
 
-uint8_t UART_STATI[STATUS_BUFFER_SIZE] = {0};
+uint8_t UART_STATI[UART_BUFFER_SIZE] = {0};
 uint8_t uart_status_idx = 0;
 
 typedef uint8_t (*CONDITION_FNC)(void);
@@ -40,7 +40,7 @@ typedef uint8_t (*CONDITION_FNC)(void);
 /* Evaluate UART status */
 void uart_save_status(void) {
     UART_STATI[uart_status_idx] = UCSR0A;
-    uart_status_idx = (uart_status_idx + 1) % STATUS_BUFFER_SIZE;
+    uart_status_idx = (uart_status_idx + 1) % UART_BUFFER_SIZE;
 }
 
 /* non-blocking checks */
@@ -57,13 +57,16 @@ uint8_t _blocking_can_send(void) {
 
 uint8_t _blocking_has_incoming(void) {
     while (!(_has_incoming())) {
+#ifdef MOCKING
+//        fprintf(stderr, "\n## NO INCOMING DATA! ##");
+#endif
     };
     return 1;
 }
 
 /* internal api */
 
-uint8_t _uart_write_char(CONDITION_FNC condition, char character) {
+uint8_t _uart_write_char(CONDITION_FNC condition, uint8_t character) {
     if ((*condition)()) {
         UDR0 = character;
 #ifdef MOCKING
@@ -72,20 +75,6 @@ uint8_t _uart_write_char(CONDITION_FNC condition, char character) {
         return 1;
     }
     return 0;
-}
-
-uint16_t _uart_write_string(CONDITION_FNC condition, char* string) {
-    uint16_t counter = 0;
-    char* tmp = string;
-    while (*tmp) {
-        if (!_uart_write_char(condition, *tmp)) {
-            return counter;
-        }
-        tmp++;
-        counter++;
-    }
-    /* Send string end */
-    return counter + _uart_write_char(condition, '\0');
 }
 
 char _uart_read_char(CONDITION_FNC condition) {
@@ -99,46 +88,17 @@ char _uart_read_char(CONDITION_FNC condition) {
     return '\0';
 }
 
-uint16_t _uart_read_string(CONDITION_FNC condition, char* buffer,
-                           uint16_t buffer_size) {
-    uint16_t checksum_binary;
-    CONDITION_FNC write_cond;
-
-    char* start = buffer;
-
-    char cur;
-    uint16_t idx = 0;
-
-    if (condition == _blocking_has_incoming) {
-        write_cond = _blocking_can_send;
-    } else {
-        write_cond = _can_send;
-    }
-
-    do {
-        cur = _uart_read_char(condition);
-        *buffer = cur;
-        buffer++;
-        idx++;
-    } while (cur != '\0' && idx < buffer_size);
-
-    /* Calculate checksum and write it to UART */
-    checksum_binary = fletchers_checksum(start);
-
-    _uart_write_char(write_cond, checksum_binary >> 8);
-    _uart_write_char(write_cond, checksum_binary & 0xff);
-    _uart_write_char(write_cond, '\0');
-
-    /* return actually read num of bytes */
-    return idx;
+void _fletcher(uint8_t* sum1, uint8_t* sum2, uint8_t data) {
+    *sum1 = (*sum1 + data) % 255;
+    *sum2 = (*sum1 + *sum2) % 255;
 }
 
 /* public api */
-uint16_t fletchers_checksum(char* string) {
+uint16_t fletchers_binary(uint8_t* data, uint16_t length) {
     uint8_t sum1 = 0, sum2 = 0;
 
-    while (*string) {
-        sum1 = (sum1 + (uint8_t)(*string++)) % 255;
+    while (length--) {
+        sum1 = (sum1 + *data++) % 255;
         sum2 = (sum1 + sum2) % 255;
     }
 
@@ -162,32 +122,51 @@ void uart_setup(void) {
 #endif
 }
 
-uint8_t uart_write_character(char character) {
-    return _uart_write_char(_can_send, character);
+uint16_t _read_16_bit(CONDITION_FNC cond) {
+    uint8_t first, second;
+    first = _uart_read_char(cond);
+    second = _uart_read_char(cond);
+    return (first << 8) | second;
 }
 
-void uart_blocking_write_character(char character) {
-    _uart_write_char(_blocking_can_send, character);
+void uart_prot_answer(const char* msg) {
+    _uart_write_char(_blocking_can_send, msg[0]);
+    _uart_write_char(_blocking_can_send, msg[1]);
 }
 
-uint16_t uart_write_string(char* string) {
-    return _uart_write_string(_can_send, string);
-}
+uint16_t uart_prot_read(uint8_t* buffer, uint16_t max_size) {
+    /* frame format:
+     * DATXXCSdddd...
+     * DAT=header
+     * XX -> 16 bit data-length
+     * CS -> 16 bit checksum
+     * ddd... -> XX-bytes of data */
+    uint16_t in_size, idx;
+    uint16_t in_checksum, cmp_checksum;
+    const char* head = "DAT";
+    uint8_t garbage;
 
-void uart_blocking_write_string(char* string) {
-    _uart_write_string(_blocking_can_send, string);
-}
+    for (idx = 0; idx < 3; idx++) {
+        if ((garbage = _uart_read_char(_blocking_has_incoming)) != head[idx]) {
+            /* Garbage received, we might as well return */
+            uart_prot_answer(MSG_GARBAGE);
+            return 0;
+        }
+    }
 
-char uart_read_character(void) { return _uart_read_char(_has_incoming); }
+    in_size = _read_16_bit(_blocking_has_incoming);
+    in_checksum = _read_16_bit(_blocking_has_incoming);
 
-char uart_blocking_read_character(void) {
-    return _uart_read_char(_blocking_has_incoming);
-}
+    for (idx = 0; idx < in_size && idx < max_size; idx++) {
+        buffer[idx % max_size] = _uart_read_char(_blocking_has_incoming);
+    }
 
-uint16_t uart_read_string(char* buffer, uint16_t buffer_size) {
-    return _uart_read_string(_has_incoming, buffer, buffer_size);
-}
+    cmp_checksum = fletchers_binary(buffer, in_size);
+    if (cmp_checksum != in_checksum) {
+        uart_prot_answer(MSG_CHECKSUM_ERROR);
+        return 0;
+    }
 
-uint16_t uart_blocking_read_string(char* buffer, uint16_t buffer_size) {
-    return _uart_read_string(_blocking_has_incoming, buffer, buffer_size);
+    uart_prot_answer(MSG_OK);
+    return in_size;
 }

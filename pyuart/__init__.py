@@ -14,10 +14,11 @@
 # You should have received a copy of the GNU General Public License
 
 import logging
+import os
 import serial
 import time
 
-from pyuart.utils import fletcher_checksum, string_to_uint8_array
+from pyuart.utils import fletcher_checksum
 
 logging.basicConfig(level=logging.INFO)
 
@@ -44,7 +45,47 @@ class UartError(IOError):
     pass
 
 
+class UartOverflowError(UartError):
+    def __init__(self, *args, **kwargs):
+        super(UartOverflowError, self).__init__(
+            "Transmitted data would exceed your MC's buffer!",
+        )
+
+
+class UartChecksumError(UartError):
+    def __init__(self, *args, **kwargs):
+        super(UartChecksumError, self).__init__(
+            'Checksum check failed on the MC!',
+        )
+
+
+class UartUnknownError(UartError):
+    def __init__(self, answer, *args, **kwargs):  # pragma: no cover
+        super(UartOverflowError, self).__init__(
+            'Received unknown Answer from MC: ' + answer.decode(),
+        )
+
+
 class UART(serial.Serial):
+    _uart_h = os.path.join(os.path.dirname(__file__), '..', 'uart.h')
+
+    def __new__(cls, *args, **kwargs):
+        instance = super(UART, cls).__new__(cls, *args, **kwargs)
+        defines = []
+
+        # Read defines from uart.h
+        with open(instance._uart_h, "r", encoding="utf-8") as c_header:
+            raw = c_header.read().splitlines()
+            defines = [x for x in raw if 'MSG_' in x or 'BUFFER_SIZE' in x]
+        for define in defines:
+            _, name, value = define.split(' ', 3)
+            try:
+                value = int(value)
+            except ValueError:
+                value = value.strip('"').encode()
+            setattr(instance, name, value)
+        return instance
+
     def __init__(self, port, baud, logger=None, *args, **kwargs):
         self.designated_port = port
 
@@ -52,6 +93,9 @@ class UART(serial.Serial):
 
         self._connection = None
         super(serial.Serial, self).__init__(None, baud, *args, **kwargs)
+
+    def set_port(self, port):
+        self.designated_port = port
 
     def _connect(self):
         self.port = self.designated_port
@@ -65,38 +109,38 @@ class UART(serial.Serial):
         if self.isOpen():
             self.close()
 
-    @benchmark
-    def write_string(self, string):
-        expected_checksum = fletcher_checksum(string)
-        self.write(string)
-        while self.out_waiting:  # pragma: no cover
-            pass
-
-        self.write(b'\0')  # Signal string.end
-        while self.out_waiting:  # pragma: no cover
-            pass
-
-        gotten_checksum = string_to_uint8_array(self.read(2))
-        self.read(1)  # ommit string end
-        try:
-            gotten_checksum = (gotten_checksum[0] << 8) | gotten_checksum[1]
-        except IndexError:  # pragma: no cover
-            raise UartError('Checksum receival failed.')
-
-        if hex(expected_checksum) != hex(gotten_checksum):  # pragma: no cover
-            raise UartError(
-                'Transmission failed! expected {}, got {} instead!'.format(
-                    hex(expected_checksum), hex(gotten_checksum)),
-            )
-        return string
+    def prepare_header(self, data):
+        length = len(data)
+        cs = fletcher_checksum(data)
+        header = bytearray()
+        for x in ['DAT'.encode(),
+                  (length >> 8, length & 0xff) + (cs >> 8, cs & 0xff)]:
+            header += bytearray(x)
+        return header
 
     @benchmark
-    def read_whole(self):
-        res = self.read(1)
-        while self.in_waiting and b'\0' not in res:
-            if self.logger:  # pragma: no cover
-                self.logger.info(
-                    '{} bytes are waiting for us...'.format(self.in_waiting),
-                )
-            res += self.read(self.in_waiting)
-        return res
+    def write_data(self, data, force_ce=False):
+        if len(data) > self.UART_BUFFER_SIZE:
+            raise UartOverflowError
+        header = self.prepare_header(data)
+
+        if force_ce:
+            data[0] = (data[0] + 1) % 255
+
+        self.write(header + data)
+        while self.out_waiting:  # pragma: no cover
+            pass
+        self.write(b'\0')
+
+        answer = self.read(2)
+        while self.in_waiting:  # pragma: no cover
+            self.read(self.in_waiting)
+
+        if answer == self.MSG_CHECKSUM_ERROR:
+            raise UartChecksumError()
+        elif answer == self.MSG_OK:
+            pass
+        else:  # pragma: no cover
+            raise UartUnknownError(answer)
+
+        return data

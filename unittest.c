@@ -17,6 +17,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include "uart.h"
 
 typedef char (*TEST_FUNC)(void);
@@ -51,21 +52,23 @@ char test_setup_uart(void) {
     return result;
 }
 
-char test_fletcher_checksum(void) {
+char test_binary_fletcher_checksum(void) {
     char result = 0;
     char hintbuffer[200];
     uint16_t checksum;
     int idx;
-    const char* string[] = {
-        "Test String 1", "BANANA",
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"};
-    uint16_t expected_checksums[] = {0x8c95, 0xa2ae, 0x1161};
+
+    const uint8_t data[][6] = {
+        {0, 255, 36, 48, 91, 34},
+        {0, 25, 64, 84, 0, 1},
+        {0, 255, 36, 20, 93, 94},
+    };
+    uint16_t expected_checksums[] = {0xd1f9, 0xae7c, 0xf3e5};
 
     print_test_beauty(__FUNCTION__);
-
     for (idx = 0; idx < 3; idx++) {
-        checksum = fletchers_checksum((char*)string[idx]);
-        sprintf(hintbuffer, "Checksum for %s", (const char*)string[idx]);
+        checksum = fletchers_binary((uint8_t*)data[idx], 6);
+        sprintf(hintbuffer, "Checksum for data %d", idx);
         result += compare_hex(checksum, expected_checksums[idx], hintbuffer);
     }
 
@@ -80,7 +83,7 @@ char test_fletcher_checksum(void) {
 /* Generate the list of testfunction, add function-names here */
 TEST_FUNC* collect_tests(void) {
     static TEST_FUNC funcs[] = {
-        test_setup_uart, test_fletcher_checksum, NULL /* Array end */
+        test_setup_uart, test_binary_fletcher_checksum, NULL /* Array end */
     };
     return funcs;
 }
