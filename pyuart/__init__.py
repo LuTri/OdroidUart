@@ -62,7 +62,7 @@ class UartChecksumError(UartError):
 
 class UartUnknownError(UartError):
     def __init__(self, answer, *args, **kwargs):  # pragma: no cover
-        super(UartOverflowError, self).__init__(
+        super(UartUnknownError, self).__init__(
             'Received unknown Answer from MC: ' + answer.decode(),
         )
 
