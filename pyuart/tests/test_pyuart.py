@@ -39,7 +39,7 @@ class CustomUProcess(subprocess.Popen):
 
 @pytest.fixture(scope="session")
 def uart_pty():
-    uart_obj = UART(None, 500000, timeout=2)
+    uart_obj = UART(None, 500000, timeout=2, write_trailing=True)
 
     subprocess.check_output(['make', 'clean'], cwd='mockserial')
     subprocess.check_output(
