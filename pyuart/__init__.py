@@ -48,24 +48,30 @@ class UartError(IOError):
 
 
 class UartOverflowError(UartError):
-    def __init__(self, *args, **kwargs):
-        super(UartOverflowError, self).__init__(
-            "Transmitted data would exceed your MC's buffer!",
-        )
+    args = ("Transmitted data would exceed your MC's buffer!",)
 
 
 class UartChecksumError(UartError):
-    def __init__(self, *args, **kwargs):
-        super(UartChecksumError, self).__init__(
-            'Checksum check failed on the MC!',
-        )
+    args = ('Checksum check failed on the MC!',)
 
 
 class UartUnknownError(UartError):
+    args = ('Received unknown Answer from MC:',)
+
     def __init__(self, answer, *args, **kwargs):  # pragma: no cover
-        super(UartUnknownError, self).__init__(
-            'Received unknown Answer from MC: ' + answer.decode(),
-        )
+        super(UartUnknownError, self).__init__(answer.decode())
+
+
+class UartParityError(UartError):
+    args = ('MC encountered an parity-check error on the last frame!',)
+
+
+class UartDataOverrunError(UartError):
+    args = ('MC encountered a data overrun during the last frame!',)
+
+
+class UartFrameError(UartError):
+    args = ('MC encountered a not further specified frame error!',)
 
 
 class UART(serial.Serial):
@@ -162,6 +168,12 @@ class UART(serial.Serial):
 
         if answer == self.MSG_CHECKSUM_ERROR:
             raise UartChecksumError()
+        elif answer == self.MSG_PARITY_ERROR:
+            raise UartParityError()
+        elif answer == self.MSG_DATA_OVERRUN:
+            raise UartDataOverrunError()
+        elif answer == self.MSG_FRAME_ERROR:
+            raise UartFrameError()
         elif answer == self.MSG_OK:
             pass
         else:  # pragma: no cover
