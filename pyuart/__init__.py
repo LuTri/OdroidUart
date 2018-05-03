@@ -98,13 +98,15 @@ class UART(serial.Serial):
             setattr(instance, name, value)
         return instance
 
-    def __init__(self, port=None, baud=None, logger=None, *args, **kwargs):
+    def __init__(self, port=None, baud=None, logger=None, write_trailing=False,
+                 *args, **kwargs):
         self.designated_port = port or self._default_port
         baud = baud or self._default_baud
 
         self.logger = logger
 
         self._connection = None
+        self.write_trailing = True
         super(serial.Serial, self).__init__(None, baud, *args, **kwargs)
 
     def set_port(self, port):
@@ -151,7 +153,8 @@ class UART(serial.Serial):
         self.write(header + data)
         while self.out_waiting:  # pragma: no cover
             pass
-        self.write(b'\0')
+        if self.write_trailing:
+            self.write(b'\0')
 
         answer = self.read(2)
         while self.in_waiting:  # pragma: no cover
