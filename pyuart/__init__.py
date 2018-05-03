@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 
 import io
+import json
 import logging
 import os
 import serial
@@ -69,13 +70,23 @@ class UartUnknownError(UartError):
 
 class UART(serial.Serial):
     _uart_h = os.path.join(os.path.dirname(__file__), '..', 'uart.h')
+    _uart_ini = os.path.join(os.path.dirname(__file__), '..', '.usart.ini')
 
     def __new__(cls, *args, **kwargs):
         instance = super(UART, cls).__new__(cls, *args, **kwargs)
         defines = []
+        # Read .usart.ini
+        try:
+            with io.open(instance._uart_ini, 'rt') as ini:
+                data = json.load(ini)
+            setattr(instance, '_default_port', data['port'])
+            setattr(instance, '_default_baud', data['baud'])
+        except IOError:
+            setattr(instance, '_default_port', None)
+            setattr(instance, '_default_baud', None)
 
         # Read defines from uart.h
-        with io.open(instance._uart_h, "rt") as c_header:
+        with io.open(instance._uart_h, 'rt') as c_header:
             raw = c_header.read().splitlines()
             defines = [x for x in raw if 'MSG_' in x or 'BUFFER_SIZE' in x]
         for define in defines:
@@ -87,8 +98,9 @@ class UART(serial.Serial):
             setattr(instance, name, value)
         return instance
 
-    def __init__(self, port, baud, logger=None, *args, **kwargs):
-        self.designated_port = port
+    def __init__(self, port=None, baud=None, logger=None, *args, **kwargs):
+        self.designated_port = port or self._default_port
+        baud = baud or self._default_baud
 
         self.logger = logger
 

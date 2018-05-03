@@ -13,6 +13,9 @@ endif
 ifndef BAUD_INT
 	BAUD_INT = 500000
 endif
+ifndef USART_PORT
+	USART_PORT = /dev/ttyACM99
+endif
 BAUD = $(BAUD_INT)UL
 
 # Target file name (without extension).
@@ -97,9 +100,12 @@ GENDEPFLAGS = -MD -MP -MF .dep/$(@F).d
 ALL_CFLAGS = -mmcu=$(MCU) -I. $(CFLAGS) $(GENDEPFLAGS)
 
 # Default target.
-all: begin gccversion build finished end
+all: begin gccversion build finished end settings
 
 build: $(OBJ)
+
+settings:
+	echo "{\"port\":\"$(USART_PORT)\", \"baud\":$(BAUD_INT)}" > .usart.ini
 
 # Eye candy.
 # AVR Studio 3.x does not check make's exit code but relies on
