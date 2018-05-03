@@ -21,7 +21,11 @@ import random
 
 import pytest
 
-from pyuart import UART, UartError, UartOverflowError, UartChecksumError
+from pyuart import (UART, UartError, UartOverflowError, UartChecksumError,
+                    UartFrameError, UartParityError, UartDataOverrunError)
+
+
+NUM_MESSAGES = 1000
 
 
 class CustomUProcess(subprocess.Popen):
@@ -67,7 +71,7 @@ def binary_messages(uart_pty):
     random.seed(time.time())
     m = [bytes(bytearray([random.randint(0, 255)
                for x in range(random.randint(1, uart.UART_BUFFER_SIZE))]))
-         for x in range(1000)]
+         for x in range(NUM_MESSAGES)]
 
     return m
 
@@ -88,7 +92,6 @@ def test_overflow_error(uart_pty):
     process, uart = uart_pty
     msg = bytearray([1] * (uart.UART_BUFFER_SIZE + 1))
 
-    process.press_char(b'b')
     with pytest.raises(UartOverflowError):
         uart.write_data(msg)
 
@@ -100,3 +103,20 @@ def test_checksum_error(uart_pty):
     process.press_char(b'b')
     with pytest.raises(UartChecksumError):
         uart.write_data(msg, True)
+
+
+def test_usarterrors(uart_pty):
+    process, uart = uart_pty
+    msg = bytearray(b'errors')
+
+    process.press_char(b'f')
+    with pytest.raises(UartFrameError):
+        uart.write_data(msg)
+
+    process.press_char(b'd')
+    with pytest.raises(UartDataOverrunError):
+        uart.write_data(msg)
+
+    process.press_char(b'p')
+    with pytest.raises(UartParityError):
+        uart.write_data(msg)

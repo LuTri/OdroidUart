@@ -89,8 +89,11 @@ extern uint8_t UDR0;
 #define MSG_CHECKSUM_ERROR "CE"
 #define MSG_OK "OK"
 #define MSG_GARBAGE "GB"
+#define MSG_PARITY_ERROR "PE"
+#define MSG_DATA_OVERRUN "DO"
+#define MSG_FRAME_ERROR "FE"
 
-#define UART_BUFFER_SIZE 300
+#define UART_BUFFER_SIZE 500
 
 /*! @brief Initialze the UART interface. */
 void uart_setup(void);
