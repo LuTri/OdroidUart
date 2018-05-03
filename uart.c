@@ -32,6 +32,10 @@ uint8_t UDR0 = 0;
 #include <stdio.h>
 #endif
 
+#define FRAME_ERROR (1 << FE0)
+#define DATAOVERRUN_ERROR (1 << DOR0)
+#define PARITY_ERROR (1 << UPE0)
+
 uint8_t UART_STATI[UART_BUFFER_SIZE] = {0};
 uint8_t uart_status_idx = 0;
 
@@ -77,9 +81,29 @@ uint8_t _uart_write_char(CONDITION_FNC condition, uint8_t character) {
     return 0;
 }
 
+void uart_prot_answer(const char* msg) {
+    _uart_write_char(_blocking_can_send, msg[0]);
+    _uart_write_char(_blocking_can_send, msg[1]);
+}
+
+void _answer_error(uint8_t status) {
+    if (!(status & (FRAME_ERROR | DATAOVERRUN_ERROR | PARITY_ERROR))) {
+        return;
+    }
+
+    if (status & DATAOVERRUN_ERROR) {
+        uart_prot_answer(MSG_DATA_OVERRUN);
+    } else if (status & PARITY_ERROR) {
+        uart_prot_answer(MSG_PARITY_ERROR);
+    } else {
+        uart_prot_answer(MSG_FRAME_ERROR);
+    }
+}
+
 char _uart_read_char(CONDITION_FNC condition) {
     if ((*condition)()) {
         uart_save_status();
+        _answer_error(UART_STATI[uart_status_idx - 1]);
 #ifdef MOCKING
         write_next();
 #endif
@@ -127,11 +151,6 @@ uint16_t _read_16_bit(CONDITION_FNC cond) {
     first = _uart_read_char(cond);
     second = _uart_read_char(cond);
     return (first << 8) | second;
-}
-
-void uart_prot_answer(const char* msg) {
-    _uart_write_char(_blocking_can_send, msg[0]);
-    _uart_write_char(_blocking_can_send, msg[1]);
 }
 
 uint16_t uart_prot_read(uint8_t* buffer, uint16_t max_size, uint8_t* status) {

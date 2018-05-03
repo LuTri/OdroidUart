@@ -27,7 +27,7 @@ int read_zero_safe(int fd, char* buff, int buff_size) {
     return read_bytes;
 }
 
-void binary_checksum_echo(int master) {
+void mock_binary(int master, const char* mock_answer) {
     static int call=0;
     char buff[MOCK_BUFFER];
     int size;
@@ -43,13 +43,11 @@ void binary_checksum_echo(int master) {
     uart_prot_read(uart_buff, BUFF_SIZE, &status);
     read_from_buff(uart_echo);
 
-    write(master, uart_echo, 2);
-}
-
-int cmp_verbose(char* a, char* b) {
-    int result;
-    result = strcmp(a, b);
-    return result;
+    if (mock_answer == NULL) {
+        write(master, uart_echo, 2);
+    } else {
+        write(master, mock_answer, 2);
+    }
 }
 
 int main(void) {
@@ -70,9 +68,15 @@ int main(void) {
 
     fflush(stdin);
     fgets(input_buffer, MOCK_BUFFER, stdin);
-    while (cmp_verbose(input_buffer, "x\n") != 0) {
-        if (cmp_verbose(input_buffer, "b\n") == 0) {
-            binary_checksum_echo(master);
+    while (strcmp(input_buffer, "x\n") != 0) {
+        if (strcmp(input_buffer, "b\n") == 0) {
+            mock_binary(master, NULL);
+        } else if (strcmp(input_buffer, "p\n") == 0) {
+            mock_binary(master, MSG_PARITY_ERROR);
+        } else if (strcmp(input_buffer, "f\n") == 0) {
+            mock_binary(master, MSG_FRAME_ERROR);
+        } else if (strcmp(input_buffer, "d\n") == 0) {
+            mock_binary(master, MSG_DATA_OVERRUN);
         }
         fflush(stdin);
         fgets(input_buffer, MOCK_BUFFER, stdin);

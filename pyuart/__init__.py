@@ -34,7 +34,7 @@ def benchmark(func):
         n_bytes = len(value)
 
         runtime = end - start
-        if self.logger:  # pragma: no cover
+        if self.logger:
             msg = 'The runtime for {:20s} completed with {:7.3f} Kb/s'
             self.logger.info(
                 msg.format(func.__name__, (n_bytes / 1000.0) / runtime),
@@ -44,28 +44,38 @@ def benchmark(func):
 
 
 class UartError(IOError):
-    pass
+    def __init__(self, *args, **kwargs):
+        full_msg = self.msg
+        for x in args:
+            full_msg += x
+        super(UartError, self).__init__(full_msg, **kwargs)
 
 
 class UartOverflowError(UartError):
-    def __init__(self, *args, **kwargs):
-        super(UartOverflowError, self).__init__(
-            "Transmitted data would exceed your MC's buffer!",
-        )
+    msg = "Transmitted data would exceed your MC's buffer!"
 
 
 class UartChecksumError(UartError):
-    def __init__(self, *args, **kwargs):
-        super(UartChecksumError, self).__init__(
-            'Checksum check failed on the MC!',
-        )
+    msg = 'Checksum check failed on the MC!'
 
 
 class UartUnknownError(UartError):
-    def __init__(self, answer, *args, **kwargs):  # pragma: no cover
-        super(UartUnknownError, self).__init__(
-            'Received unknown Answer from MC: ' + answer.decode(),
-        )
+    msg = 'Received unknown Answer from MC:'
+
+    def __init__(self, answer, *args, **kwargs):
+        super(UartUnknownError, self).__init__(answer.decode())
+
+
+class UartParityError(UartError):
+    msg = 'MC encountered an parity-check error on the last frame!'
+
+
+class UartDataOverrunError(UartError):
+    msg = 'MC encountered a data overrun during the last frame!'
+
+
+class UartFrameError(UartError):
+    msg = 'MC encountered a not further specified frame error!'
 
 
 class UART(serial.Serial):
@@ -151,20 +161,26 @@ class UART(serial.Serial):
             self.logger.info([hex(x) for x in bytearray(data)])
 
         self.write(header + data)
-        while self.out_waiting:  # pragma: no cover
+        while self.out_waiting:
             pass
         if self.write_trailing:
             self.write(b'\0')
 
         answer = self.read(2)
-        while self.in_waiting:  # pragma: no cover
+        while self.in_waiting:
             self.read(self.in_waiting)
 
         if answer == self.MSG_CHECKSUM_ERROR:
             raise UartChecksumError()
+        elif answer == self.MSG_PARITY_ERROR:
+            raise UartParityError()
+        elif answer == self.MSG_DATA_OVERRUN:
+            raise UartDataOverrunError()
+        elif answer == self.MSG_FRAME_ERROR:
+            raise UartFrameError()
         elif answer == self.MSG_OK:
             pass
-        else:  # pragma: no cover
+        else:
             raise UartUnknownError(answer)
 
         return data
