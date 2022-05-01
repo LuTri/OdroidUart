@@ -173,3 +173,11 @@ uint16_t uart_prot_read(uint8_t* buffer, uint16_t max_size, uint8_t* status) {
     *status = 0;
     return in_size;
 }
+
+uint8_t echo_test(void) {
+    uint8_t in, idx;
+    for (idx = 0; idx < N_ECHO_TESTS; idx++) {
+        in = _uart_read_char(_blocking_has_incoming);
+        _uart_write_char(_blocking_can_send, in);
+    }
+}

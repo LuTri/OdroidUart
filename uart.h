@@ -19,6 +19,11 @@
 #ifndef _ODROID_UART
 #define _ODROID_UART
 
+// Bytes send / received for initial echo test
+#ifndef N_ECHO_TESTS
+#define N_ECHO_TESTS 20
+#endif
+
 /* Let AVR-libc validate BAUD rate and error */
 #define BAUD_TOL 1
 
@@ -129,4 +134,6 @@ uint8_t has_incoming(void);
 uint16_t uart_prot_read(uint8_t* buffer /*! buffer to hold the payload */,
                         uint16_t max_size /*! size of the buffer */,
                         uint8_t* status /*! register to store the status in */);
+
+uint8_t echo_test(void);
 #endif
