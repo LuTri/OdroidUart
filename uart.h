@@ -132,6 +132,7 @@ uint8_t has_incoming(void);
  * @return @c **0** if the frame was errorneous, otherwise the number of
  * transfered bytes. */
 uint16_t uart_prot_read(uint8_t* buffer /*! buffer to hold the payload */,
+                        uint8_t* cmd /*! register to store a arbitrary command code in.*/,
                         uint16_t max_size /*! size of the buffer */,
                         uint8_t* status /*! register to store the status in */);
 

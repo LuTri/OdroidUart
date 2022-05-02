@@ -134,10 +134,11 @@ void uart_prot_answer(const char* msg) {
     _uart_write_char(_blocking_can_send, msg[1]);
 }
 
-uint16_t uart_prot_read(uint8_t* buffer, uint16_t max_size, uint8_t* status) {
+uint16_t uart_prot_read(uint8_t* buffer, uint8_t* cmd, uint16_t max_size, uint8_t* status) {
     /* frame format:
-     * DATXXCSdddd...
+     * DATcXXCSdddd...
      * DAT=header
+     * c = command code
      * XX -> 16 bit data-length
      * CS -> 16 bit checksum
      * ddd... -> XX-bytes of data */
@@ -154,6 +155,9 @@ uint16_t uart_prot_read(uint8_t* buffer, uint16_t max_size, uint8_t* status) {
             return 0;
         }
     }
+
+    /* Read the command code */
+    *cmd = _uart_read_char(_blocking_has_incoming);
 
     in_size = _read_16_bit(_blocking_has_incoming);
     in_checksum = _read_16_bit(_blocking_has_incoming);
