@@ -1,32 +1,14 @@
 # Hey Emacs, this is a -*- makefile -*-
 
-# Inherit parameters from a parent's Makefile
-ifndef MCU # default target MCU to atmega328p
-	MCU = atmega328p
-endif
-
-ifndef F_OSC # default quartz speed to 16MHz
-	F_OSC = 16000000
-endif
-
-# Desired BAUD-rate
-ifndef BAUD_INT
-	BAUD_INT = 500000
-endif
-ifndef USART_PORT
-	USART_PORT = /dev/ttyACM99
-endif
-BAUD = $(BAUD_INT)UL
-
-# Target file name (without extension).
-TARGET = uart
+DIAGFLAGS = -ftrack-macro-expansion=0
+DIAGFLAGS += -fno-diagnostics-show-caret
+DIAGFLAGS += -fdiagnostics-color=auto
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = $(TARGET).c
+SRC := $(shell find -not -path '*example*' -name '*.c')
 
-UNIT_TARGET = unittest
-
-UNIT_SRCS = $(UNIT_TARGET).c $(SRC)
+# Current working directory
+PWD := $(shell pwd)
 
 # Optimization level, can be [0, 1, 2, 3, s].
 # 0 = turn off optimization. s = optimize for size.
@@ -46,13 +28,33 @@ DEBUG = dwarf-2
 # gnu99 - c99 plus GCC extensions
 CSTANDARD = -std=gnu99
 
+# Inherit parameters from a parent's Makefile
+ifndef MCU # default target MCU to atmega328p
+	MCU = atmega328p
+endif
+
+ifndef F_OSC # default quartz speed to 16MHz
+	F_OSC = 16000000
+endif
+
+# Desired BAUD-rate
+ifndef BAUD_INT
+	BAUD_INT = 500000
+endif
+ifndef USART_PORT
+	USART_PORT = /dev/ttyACM99
+endif
+BAUD = $(BAUD_INT)UL
+
+MAX_UARTS = 3
+
 # Compiler flags.
-#  -g*:          generate debugging information
-#  -O*:          optimization level
-#  -f...:        tuning, see GCC manual and avr-libc documentation
-#  -Wall...:     warning level
-#  -Wa,...:      tell GCC to pass this to the assembler.
-#    -adhlns...: create assembler listing
+#  -g*:		  generate debugging information
+#  -O*:		  optimization level
+#  -f...:		tuning, see GCC manual and avr-libc documentation
+#  -Wall...:	 warning level
+#  -Wa,...:	  tell GCC to pass this to the assembler.
+#	-adhlns...: create assembler listing
 CFLAGS = -g$(DEBUG)
 CFLAGS += $(CDEFS) $(CINCS)
 CFLAGS += -O$(OPT)
@@ -63,49 +65,45 @@ CFLAGS += -DF_OSC=$(F_OSC)
 CFLAGS += -DF_CPU=$(F_OSC)
 CFLAGS += -DBAUD=$(BAUD)
 
+# Additional UART settings
+
+PFLAGS = --PORT $(USART_PORT)
+PFLAGS += --BAUD $(BAUD_INT)
+PFLAGS += --MC-CLOCK $(F_OSC)
+include passings.mk
+
+CFLAGS += -DBUFFER_STATUS_BYTES=$(BUFFER_STATUS_BYTES)
+
 # Define programs and commands.
 CC = avr-gcc
-GCC = gcc
+SIZE = avr-size
 REMOVE = rm -f
 
-# Define Messages
-# English
-MSG_ERRORS_NONE = Errors: none
-MSG_BEGIN = -------- begin --------
-MSG_END = --------  end  --------
-MSG_SIZE_BEFORE = Size before:
-MSG_SIZE_AFTER = Size after:
-MSG_COMPILING = Compiling:
-MSG_CLEANING = Cleaning project:
-
-
-
-
 # Define all object files.
-OBJ = $(SRC:.c=.o) $(ASRC:.S=.o)
-
-# Define all object files.
-UNIT_OBJ = $(UNIT_SRCS:.c=.o)
+OBJ_DIR = objs
+OBJ = $(addprefix $(OBJ_DIR)/,$(subst ./,,$(SRC:.c=.o)))
 
 # Define all listing files.
 LST = $(ASRC:.S=.lst) $(SRC:.c=.lst)
 
-
 # Compiler flags to generate dependency files.
-### GENDEPFLAGS = -Wp,-M,-MP,-MT,$(*F).o,-MF,.dep/$(@F).d
 GENDEPFLAGS = -MD -MP -MF .dep/$(@F).d
 
 # Combine all necessary flags and optional flags.
 # Add target processor to flags.
 ALL_CFLAGS = -mmcu=$(MCU) -I. $(CFLAGS) $(GENDEPFLAGS)
 
+# Define Messages
+MSG_ERRORS_NONE = Errors: none
+MSG_BEGIN = -------- begin $(PWD) --------
+MSG_END = --------  end  $(PWD) --------
+MSG_COMPILING = Compiling objects $(OBJ)
+MSG_CLEANING = Cleaning project:
+
 # Default target.
-all: begin gccversion build finished end settings
+all: begin build finished end
 
 build: $(OBJ)
-
-settings:
-	echo "{\"port\":\"$(USART_PORT)\", \"baud\":$(BAUD_INT)}" > .usart.ini
 
 # Eye candy.
 # AVR Studio 3.x does not check make's exit code but relies on
@@ -115,6 +113,7 @@ begin:
 	@echo $(MSG_BEGIN)
 
 finished:
+	@echo
 	@echo $(MSG_ERRORS_NONE)
 
 end:
@@ -125,11 +124,22 @@ end:
 gccversion :
 	@$(CC) --version
 
-# Compile: create object files from C source files.
-%.o : %.c
+%.mk :
 	@echo
-	@echo $(MSG_COMPILING) $<
-	$(CC) -c $(ALL_CFLAGS) $< -o $@
+	python3 generate_meta.py $(MAX_UARTS)
+
+.usart.ini : %.mk
+	@echo
+	python3 write_config.py $(PFLAGS)
+
+# Compile: create object files from C source files.
+$(OBJ_DIR)/%.o : %.c .usart.ini
+	@echo
+	@echo \"#############################\"
+	@echo Compiling "$< -> $@"
+	@echo \"#############################\"
+	@mkdir -p $(@D)
+	$(CC) $(DIAGFLAGS) -c $(ALL_CFLAGS) $< -o $@
 
 # Target: clean project.
 clean: begin clean_list finished end
@@ -138,15 +148,14 @@ clean_list :
 	@echo
 	@echo $(MSG_CLEANING)
 	$(REMOVE) $(OBJ)
+	$(REMOVE) .usart.ini
+	$(REMOVE) *.meta
+	$(REMOVE) passings.mk
+	@echo
 
 # Include the dependency files.
 -include $(shell mkdir .dep 2>/dev/null) $(wildcard .dep/*)
 
-unittest : CC=$(GCC)
-unittest : ALL_CFLAGS = $(CFLAGS) -DUNITTEST
-unittest : $(UNIT_OBJ)
-	$(GCC) $(UNIT_OBJ) -o $@
-	./unittest
 uart.o: .FORCE
 
 .PHONY: .FORCE
@@ -154,4 +163,4 @@ uart.o: .FORCE
 
 # Listing of phony targets.
 .PHONY : all begin finish end sizebefore sizeafter gccversion \
-build elf hex eep lss sym coff extcoff clean clean_list unittest
+build elf hex eep lss sym coff extcoff clean clean_list list-objects

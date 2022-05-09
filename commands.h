@@ -19,103 +19,43 @@
 #ifndef _ODROID_UART
 #define _ODROID_UART
 
+#include "basic/setup.h"
+
 // Bytes send / received for initial echo test
 #ifndef N_ECHO_TESTS
 #define N_ECHO_TESTS 20
 #endif
 
-/* Let AVR-libc validate BAUD rate and error */
-#define BAUD_TOL 1
-
-#ifndef BAUD
-#define BAUD 500000UL
-#endif
+#include "../globals.h"
 
 #ifndef UNITTEST
-#include <util/setbaud.h>
-
 #include <avr/io.h>
+#include <avr/interrupt.h>
 #else
-#ifdef MOCKING
-#include "mockserial/mockregisters.h"
+#include "test/mockdefines.h"
 #endif
 
-// Mock registers and defines while in unittest
-#ifndef MOCKING
-typedef unsigned char uint8_t;
-#endif
-typedef unsigned long uint16_t;
-
-extern uint8_t UCSR0A;
-extern uint8_t UCSR0B;
-extern uint8_t UCSR0C;
-extern uint8_t UBRR0H;
-extern uint8_t UBRR0L;
-extern uint8_t UDR0;
-// Control register A bits
-
-#define RXC0 7
-#define TXC0 6
-#define UDRE0 5
-#define FE0 4
-#define DOR0 3
-#define UPE0 2
-#define U2X0 1
-#define MPCM0 0
-
-// Control register B bits
-
-#define RXCIE0 7
-#define TXCIE0 6
-#define UDRIE0 5
-#define RXEN0 4
-#define TXEN0 3
-#define UCSZ02 2
-#define RXB80 1
-#define TXB80 0
-
-// Control registers C bits
-
-#define UMSEL01 7
-#define UMSEL00 6
-#define UPM01 5
-#define UPM00 4
-#define USBS0 3
-#define UCSZ01 2
-#define UCSZ00 1
-#define UCPOL0 0
-
-// Mock BAUD values
-
-#define UBRRH_VALUE 0xF0
-#define UBRRL_VALUE 0x0F
-#endif
-
-#define MSG_CHECKSUM_ERROR "CE"
-#define MSG_OK "OK"
-#define MSG_GARBAGE "GB"
-#define MSG_PARITY_ERROR "PE"
-#define MSG_DATA_OVERRUN "DO"
-#define MSG_FRAME_ERROR "FE"
-
-#define UART_BUFFER_SIZE 500
-
-/*! @brief Initialze the UART interface. */
-void uart_setup(void);
-
-extern uint8_t UART_STATI[UART_BUFFER_SIZE];
-extern uint8_t uart_status_idx;
+typedef struct {
+    uint8_t status;
+    uint8_t header[UART_HEADER_SIZE];
+    uint8_t tail[UART_DONE_SIZE];
+    uint16_t cur_byte;
+    uint8_t cmd;
+    uint16_t size;
+    uint16_t checksum;
+    uint8_t data[N_LEDS];
+} COMMAND_BUFFER;
 
 /*! @brief Calculate the checksum for a string.
  *
  * Refer to https://en.wikipedia.org/wiki/Fletcher%27s_checksum for
  * details on how the checksum is build..
  * @return @c the 16bit checksum of the payload. */
-uint16_t fletchers_binary(uint8_t* data, uint16_t length);
+//uint16_t fletchers_binary(uint8_t* data, uint16_t length);
 
 /*! @brief Check if there incoming bytes over UART.
  * @return @c **1** if bytes are available, **0** otherwise. */
-uint8_t has_incoming(void);
+//uint8_t has_incoming(void);
 
 /*! @brief perfrom a full frame read
  *
@@ -131,10 +71,18 @@ uint8_t has_incoming(void);
  * failed.
  * @return @c **0** if the frame was errorneous, otherwise the number of
  * transfered bytes. */
-uint16_t uart_prot_read(uint8_t* buffer /*! buffer to hold the payload */,
-                        uint8_t* cmd /*! register to store a arbitrary command code in.*/,
-                        uint16_t max_size /*! size of the buffer */,
-                        uint8_t* status /*! register to store the status in */);
+//uint16_t uart_prot_read(uint8_t* buffer /*! buffer to hold the payload */,
+//                        uint8_t* cmd /*! register to store a arbitrary command code in.*/,
+//                        uint16_t max_size /*! size of the buffer */,
+//                        uint8_t* status /*! register to store the status in */,
+//                        INDICATOR fnc);
+//
+//uint16_t uart_prot_full_read(uint8_t* buffer /*! buffer to hold the payload */,
+//                        uint8_t* cmd /*! register to store a arbitrary command code in.*/,
+//                        uint16_t max_size /*! size of the buffer */,
+//                        uint8_t* status /*! register to store the status in */,
+//                        INDICATOR fnc);
 
-uint8_t echo_test(void);
+COMMAND_BUFFER* get_next_command(void);
+
 #endif

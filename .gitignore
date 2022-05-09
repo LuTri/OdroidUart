@@ -1,8 +1,8 @@
 # Prerequisites
 *.d
 
-# Object files
-*.o
+# Object files / folders
+objs/
 *.ko
 *.obj
 *.elf
@@ -73,3 +73,10 @@ lib/
 # tox tests
 .tox/
 .pytest-cache/
+
+# meta files
+.usart.ini
+*.meta
+*.mk
+
+*_BAK
