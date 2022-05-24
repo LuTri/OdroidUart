@@ -16,12 +16,56 @@ DEFAULTS = {
     'UART_CHAR_SIZE': 8,
 }
 
+CONSTANTS = {
+    'N_COLS': 14,
+    'N_ROWS': 8,
+}
+
+
+class CmdParam:
+    def __init__(self, name, py_type=int, bytes=1, val_range=None,
+                 val_range_open=(False, False), conversion=None, default=None):
+        self._name = name
+        self._py_type = py_type
+        self._bytes = bytes
+        self._val_range = val_range
+        self._val_range_open = val_range_open
+        self._conversion = conversion
+        self._default = default
+
+    def as_json(self):
+        _needs_conversion = self._py_type != int or self._bytes != 1
+        if self._conversion is None and _needs_conversion:
+            raise ValueError('Need a converter for {}@{}bytes!'.format(
+                repr(self._py_type), self._bytes
+            ))
+        _res = {
+            'name': self._name,
+            'type': self._py_type.__name__,
+            'bytes': self._bytes,
+        }
+
+        if self._conversion is not None:
+            _res['conversion'] = self._conversion
+
+        if self._default is not None:
+            _res['default'] = self._default
+
+        if self._val_range:
+            l_key = 'r_left_{}'.format('exc' if self._val_range_open[0] else 'inc')
+            _res[l_key] = self._py_type(self._val_range[0])
+            r_key = 'r_right_{}'.format('exc' if self._val_range_open[1] else 'inc')
+            _res[r_key] = self._py_type(self._val_range[1])
+
+        return _res
+
 
 class Definition:
-    def __init__(self, name, value=None, export=False):
+    def __init__(self, name, value=None, export=False, cmd_params=None):
         self._name = name
         self._value = value
         self._export = export
+        self._cmd_params = cmd_params or []
 
     def as_define(self):
         if self._name is None:
@@ -34,21 +78,85 @@ class Definition:
         value = self._value
         if isinstance(value, str):
             value = value.replace('"', '')
-        return {self._name: value}
+
+        _json = {self._name: {'code': value}}
+        if self._cmd_params:
+            _json[self._name]['params'] = [param.as_json() for
+                                           param in self._cmd_params]
+        return _json
 
 
 ADDITIONAL_CONFIG = [
-    Definition('CMD_SOUNDTOLIGHT', 0x01, True),
+    Definition('CMD_SOUNDTOLIGHT', 0x01, True, cmd_params=[
+        CmdParam('hue_full', py_type=float, bytes=2, val_range=(0, 360),
+                 val_range_open=(False, True), conversion='real_360_2byte',
+                 default=240.0),
+        CmdParam('val_0', bytes=2, conversion='dualbyte', default=0),
+        CmdParam('val_1', bytes=2, conversion='dualbyte', default=0),
+        CmdParam('val_2', bytes=2, conversion='dualbyte', default=0),
+        CmdParam('val_3', bytes=2, conversion='dualbyte', default=0),
+        CmdParam('val_4', bytes=2, conversion='dualbyte', default=0),
+        CmdParam('val_5', bytes=2, conversion='dualbyte', default=0),
+        CmdParam('val_6', bytes=2, conversion='dualbyte', default=0),
+        CmdParam('val_7', bytes=2, conversion='dualbyte', default=0),
+        CmdParam('val_8', bytes=2, conversion='dualbyte', default=0),
+        CmdParam('val_9', bytes=2, conversion='dualbyte', default=0),
+        CmdParam('val_10', bytes=2, conversion='dualbyte', default=0),
+        CmdParam('val_11', bytes=2, conversion='dualbyte', default=0),
+        CmdParam('val_12', bytes=2, conversion='dualbyte', default=0),
+        CmdParam('val_13', bytes=2, conversion='dualbyte', default=0),
+    ]),
     Definition('CMD_SLAVE', 0x02, True),
-    Definition('CMD_MOOD', 0x03, True),
+    Definition('CMD_MOOD', 0x03, True, cmd_params=[
+        CmdParam('pos_x'),
+        CmdParam('pos_y'),
+        CmdParam('hue', py_type=float, bytes=2, val_range=(0, 360),
+                 val_range_open=(False, True), conversion='real_360_2byte'),
+        CmdParam('intensity', py_type=float, bytes=2, val_range=(0, 1),
+                 conversion='per_one_2byte'),
+        CmdParam('loop_step', py_type=int, bytes=2, conversion='dualbyte'),
+        CmdParam('mood_index', py_type=int),
+    ]),
     Definition('CMD_WHITE', 0x04, True),
     Definition('CMD_OFF', 0x05, True),
-    Definition('CMD_SNAKE', 0x06, True),
+    Definition('CMD_SNAKE', 0x06, True, cmd_params=[
+        CmdParam('loop_step', bytes=2, conversion='dualbyte'),
+        CmdParam('main_r', default=30),
+        CmdParam('main_g', default=150),
+        CmdParam('main_b', default=2),
+        CmdParam('target_r_front', default=20),
+        CmdParam('target_g_front', default=5),
+        CmdParam('target_b_front', default=25),
+        CmdParam('target_r_back', default=10),
+        CmdParam('target_g_back', default=10),
+        CmdParam('target_b_back', default=10),
+        CmdParam('len_front', val_range=(0, 256), val_range_open=(True, True),
+                 default=2),
+        CmdParam('len_back', val_range=(0, 256), val_range_open=(True, True),
+                 default=6),
+    ]),
+    Definition('CMD_REBOOT', 0x07, True),
+    Definition('CMD_SET_DO_BENCHMARK', 0x08, True, cmd_params=[
+        CmdParam('status', default=1, val_range=(0, 1)),
+        CmdParam('num', default=10),
+    ]),
+    Definition('CMD_WRITE', 0x0a, True, cmd_params=[
+        CmdParam('loop_step', bytes=2, conversion='dualbyte', default=20000),
+        CmdParam('font_color_rgb', bytes=3, conversion='triplebyte',
+                 default=0xB4B4B4),
+        CmdParam('fading', default=0),
+        CmdParam('ghosting', default=0),
+        CmdParam('data', py_type=str, conversion='stringint_array'),
+    ]),
+    Definition('CMD_GET_PARAMETERS', 0xF1, True),
     Definition(None),
     Definition('MAX_SNAKE_LENGTH', 4, True),
     Definition(None),
     Definition('MSG_CHECKSUM_ERROR', '"CE"', True),
     Definition('MSG_OK', '"OK"', True),
+    Definition('MSG_BENCHMARK_DATA', '"BM"', True),
+    Definition('MSG_BENCHMARK_START', '"BI"', True),
+    Definition('MSG_BENCHMARK_STOP', '"BS"', True),
     Definition('MSG_RESET', '"RS"', True),
     Definition('MSG_PARITY_ERROR', '"PE"', True),
     Definition('MSG_BUFFER_OVERFLOW', '"BO"', True),
@@ -57,6 +165,7 @@ ADDITIONAL_CONFIG = [
     Definition('MSG_FRAME_UNFINISHED', '"UF"', True),
     Definition('MSG_ANSWER_START', '"ANS"', True),
     Definition(None),
+    Definition('UART_NUM_BENCHMARKS', 40, False),
     Definition('UART_SKIP_UNFINISHED', 20, False),
     Definition('UART_FLAG_RESET', 1, True),
     Definition('UART_FLAG_CHECKSUM_ERROR', 2, True),
@@ -69,6 +178,7 @@ ADDITIONAL_CONFIG = [
     Definition('UART_HEADER_SIZE', 3),
     Definition('UART_DONE_SIZE', 4),
     Definition(None),
+    Definition('UART_ERRORS_REBOOT_THRESHOLD', 6000),
     Definition('UART_CMD_SIZE', 1),
     Definition('UART_T_SIZE', 2),
     Definition('UART_CH_SIZE', 2),
@@ -99,7 +209,7 @@ def control_meta(outfile=os.path.join(os.curdir, "control.meta")):
     for item in ADDITIONAL_CONFIG:
         data.update(item.as_json())
     with open(outfile, 'w') as fp:
-        json.dump(data, fp)
+        json.dump(data, fp, indent=2)
 
 
 def config_writer_meta(num, outfile=os.path.join(os.curdir, "writer.meta")):
@@ -399,45 +509,36 @@ def config(num, outfile=os.path.join(os.curdir, "basic", "config.h")):
 
     fmt_string = """\
 #ifdef USART{num}_ENABLED
-//#pragma message("Setting defaults for USART{num}")
 
 #ifndef UART_RX{num}_BUFFER_SIZE
-//#pragma message("Setting default for UART_RX{num}_BUFFER_SIZE = {UART_RX_BUFFER_SIZE}")
 #define UART_RX{num}_BUFFER_SIZE {UART_RX_BUFFER_SIZE}UL
 #endif /* ifndef UART_RX{num}_BUFFER_SIZE */
 
 #ifndef UART_TX{num}_BUFFER_SIZE
-//#pragma message("Setting default for UART_TX{num}_BUFFER_SIZE = {UART_TX_BUFFER_SIZE}")
 #define UART_TX{num}_BUFFER_SIZE {UART_TX_BUFFER_SIZE}UL
 #endif /* ifndef UART_TX{num}_BUFFER_SIZE */
 
 #ifndef USART{num}_LARGE_BUFFER
-//#pragma message("Setting default for USART{num}_LARGE_BUFFER = {USART_LARGE_BUFFER}")
 #define USART{num}_LARGE_BUFFER {USART_LARGE_BUFFER}
 #endif /* ifndef UART{num}_LARGE_BUFFER */
 
 #ifndef UART{num}_PARITY_MODE
-//#pragma message("Setting default for UART{num}_PARITY_MODE = {UART_PARITY_MODE}")
 #define UART{num}_PARITY_MODE {UART_PARITY_MODE}
 #endif /* UART{num}_PARITY_MODE */
 
 #ifndef UART{num}_STOP_BITS
-//#pragma message("Setting default for UART{num}_STOP_BITS = {UART_STOP_BITS}")
 #define UART{num}_STOP_BITS {UART_STOP_BITS}
 #endif /* UART{num}_STOP_BITS */
 
 #ifndef UART{num}_SYNC
-//#pragma message("Setting default for UART{num}_SYNC = {UART_SYNC}")
 #define UART{num}_SYNC {UART_SYNC}
 #endif /* UART{num}_SYNC */
 
 #ifndef UART{num}_MASTER_SPI
-//#pragma message("Setting default for UART{num}_MASTER_SPI = {UART_MASTER_SPI}")
 #define UART{num}_MASTER_SPI {UART_MASTER_SPI}
 #endif /* UART{num}_MASTER_SPI */
 
 #ifndef UART{num}_CHAR_SIZE
-//#pragma message("Setting default for UART{num}_CHAR_SIZE = {UART_CHAR_SIZE}")
 #define UART{num}_CHAR_SIZE {UART_CHAR_SIZE}
 #endif /* ifndef UART{num}_CHAR_SIZE */
 

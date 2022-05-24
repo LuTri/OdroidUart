@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include "commands.h"
 #include "basic/config.h"
+#include "basic/fletcher.h"
 #include "avr-uart/uart.h"
 
 COMMAND_BUFFER _uart_buf1 = {
@@ -40,35 +41,32 @@ COMMAND_BUFFER _uart_buf2 = {
 COMMAND_BUFFER* current_buffer = &_uart_buf1;
 COMMAND_BUFFER* other_buffer = &_uart_buf2;
 
-void _fletcher(uint8_t* sum1, uint8_t* sum2, uint8_t data) {
-    *sum1 = (*sum1 + data) % 255;
-    *sum2 = (*sum1 + *sum2) % 255;
+float per_cent_2byte(uint8_t h_value, uint8_t l_value) {
+	return per_one_2byte(h_value, l_value) * 100.0;
 }
 
-/* public api */
-uint16_t fletchers_binary(uint8_t* data, uint16_t length) {
-    uint8_t sum1 = 0, sum2 = 0;
+float per_one_2byte(uint8_t h_value, uint8_t l_value) {
+	return ((float)dualbyte(h_value, l_value)) / (float)0xFFFF;
+}
 
-    while (length--) {
-        sum1 = (sum1 + *data++) % 255;
-        sum2 = (sum1 + sum2) % 255;
-    }
+float per_one_1byte(uint8_t value) {
+	return (float)value / (float)0xFF;
+}
 
-    return (sum1 << 8) | sum2;
+float real_360_2byte(uint8_t h_value, uint8_t l_value) {
+    return per_one_2byte(h_value, l_value) * 360.0;
+}
+
+uint16_t dualbyte(uint8_t h_value, uint8_t l_value) {
+	return (h_value << 8) | l_value;
 }
 
 void verify_framebuffer(void) {
-    if (fletchers_binary(current_buffer->data, current_buffer->size)
+    if (fletchers_checksum(current_buffer->data, current_buffer->size)
         != current_buffer->checksum) {
         current_buffer->status = UART_FLAG_CHECKSUM_ERROR;
     } else {
         current_buffer->status = UART_FLAG_VERIFIED;
-    }
-}
-
-void echo_failure_frame(void) {
-    uint16_t cur;
-    for (cur = 0; cur < current_buffer->cur_byte; cur++) {
     }
 }
 
@@ -130,18 +128,21 @@ COMMAND_BUFFER* _swap_framebuffer_ptr(void) {
     return _tmp;
 }
 
-COMMAND_BUFFER* get_next_command(void) {
+COMMAND_BUFFER* get_next_command(uint16_t* error_counter) {
     static uint8_t unfinished_flags_idx = 0;
     uint8_t frame_status = 0;
     uint16_t available = uart0_available();
 
     if (available & UART_OVERRUN_ERROR) {
+        *error_counter += 1;
         uart0_puts(MSG_ANSWER_START);
         uart0_puts(MSG_DATA_OVERRUN);
     } else if (available & UART_BUFFER_OVERFLOW) {
+        *error_counter += 1;
         uart0_puts(MSG_ANSWER_START);
         uart0_puts(MSG_BUFFER_OVERFLOW);
     } else if (available & UART_FRAME_ERROR) {
+        *error_counter += 1;
         uart0_puts(MSG_ANSWER_START);
         uart0_puts(MSG_FRAME_ERROR);
     } else if (available & UART_NO_DATA) {
@@ -161,12 +162,14 @@ COMMAND_BUFFER* get_next_command(void) {
                 uart0_puts(MSG_OK);
                 break;
             case UART_FLAG_CHECKSUM_ERROR:
+                *error_counter += 1;
                 uart0_puts(MSG_CHECKSUM_ERROR);
                 break;
             case UART_FLAG_UNFINISHED:
                 uart0_puts(MSG_FRAME_UNFINISHED);
                 break;
             case UART_FLAG_RESET:
+                *error_counter += 1;
                 uart0_puts(MSG_RESET);
                 break;
             default:

@@ -46,43 +46,16 @@ typedef struct {
     uint8_t data[N_LEDS];
 } COMMAND_BUFFER;
 
-/*! @brief Calculate the checksum for a string.
- *
- * Refer to https://en.wikipedia.org/wiki/Fletcher%27s_checksum for
- * details on how the checksum is build..
- * @return @c the 16bit checksum of the payload. */
-//uint16_t fletchers_binary(uint8_t* data, uint16_t length);
+COMMAND_BUFFER* get_next_command(uint16_t* error_counter);
 
-/*! @brief Check if there incoming bytes over UART.
- * @return @c **1** if bytes are available, **0** otherwise. */
-//uint8_t has_incoming(void);
+typedef void (FUNCTIONALITY_LAUNCHER)(COMMAND_BUFFER* command);
 
-/*! @brief perfrom a full frame read
- *
- * Attempt to read an UART-Frame of the following format:
- * DATXXCSddd..
- * Where 'DAT' is the frame's beginning,
- * XX is the 16bit size of the frame's payload,
- * CS is the 16bit expected checksum of the frame's payload,
- * ddd... are the frame's payload.
- *
- * status will hold the following values, after the function finished:
- * **0** on success, **1** when garbage was received, **2** when checksum-check
- * failed.
- * @return @c **0** if the frame was errorneous, otherwise the number of
- * transfered bytes. */
-//uint16_t uart_prot_read(uint8_t* buffer /*! buffer to hold the payload */,
-//                        uint8_t* cmd /*! register to store a arbitrary command code in.*/,
-//                        uint16_t max_size /*! size of the buffer */,
-//                        uint8_t* status /*! register to store the status in */,
-//                        INDICATOR fnc);
-//
-//uint16_t uart_prot_full_read(uint8_t* buffer /*! buffer to hold the payload */,
-//                        uint8_t* cmd /*! register to store a arbitrary command code in.*/,
-//                        uint16_t max_size /*! size of the buffer */,
-//                        uint8_t* status /*! register to store the status in */,
-//                        INDICATOR fnc);
+float per_cent_2byte(uint8_t h_value, uint8_t l_value);
+float per_one_2byte(uint8_t h_value, uint8_t l_value);
+float per_one_1byte(uint8_t value);
+float real_360_2byte(uint8_t h_value, uint8_t l_value);
+uint16_t dualbyte(uint8_t h_value, uint8_t l_value);
 
-COMMAND_BUFFER* get_next_command(void);
+
 
 #endif

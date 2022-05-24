@@ -1,9 +1,5 @@
 # Hey Emacs, this is a -*- makefile -*-
 
-DIAGFLAGS = -ftrack-macro-expansion=0
-DIAGFLAGS += -fno-diagnostics-show-caret
-DIAGFLAGS += -fdiagnostics-color=auto
-
 # List C source files here. (C dependencies are automatically generated.)
 SRC := $(shell find -not -path '*example*' -name '*.c')
 
@@ -72,9 +68,8 @@ PFLAGS += --BAUD $(BAUD_INT)
 PFLAGS += --MC-CLOCK $(F_OSC)
 include passings.mk
 
-CFLAGS += -DBUFFER_STATUS_BYTES=$(BUFFER_STATUS_BYTES)
-
 # Define programs and commands.
+PY = python3
 CC = avr-gcc
 SIZE = avr-size
 REMOVE = rm -f
@@ -126,11 +121,11 @@ gccversion :
 
 %.mk :
 	@echo
-	python3 generate_meta.py $(MAX_UARTS)
+	$(PY) generate_meta.py $(MAX_UARTS)
 
 .usart.ini : %.mk
 	@echo
-	python3 write_config.py $(PFLAGS)
+	$(PY) write_config.py $(PFLAGS)
 
 # Compile: create object files from C source files.
 $(OBJ_DIR)/%.o : %.c .usart.ini
@@ -148,8 +143,6 @@ clean_list :
 	@echo
 	@echo $(MSG_CLEANING)
 	$(REMOVE) $(OBJ)
-	$(REMOVE) .usart.ini
-	$(REMOVE) *.meta
 	$(REMOVE) passings.mk
 	@echo
 
@@ -163,4 +156,4 @@ uart.o: .FORCE
 
 # Listing of phony targets.
 .PHONY : all begin finish end sizebefore sizeafter gccversion \
-build elf hex eep lss sym coff extcoff clean clean_list list-objects
+build elf hex eep lss sym coff extcoff clean clean_list list-objects .usart.ini
