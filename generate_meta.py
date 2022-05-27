@@ -90,7 +90,7 @@ ADDITIONAL_CONFIG = [
     Definition('CMD_SOUNDTOLIGHT', 0x01, True, cmd_params=[
         CmdParam('hue_full', py_type=float, bytes=2, val_range=(0, 360),
                  val_range_open=(False, True), conversion='real_360_2byte',
-                 default=240.0),
+                 default=120.0),
         CmdParam('target_hue', py_type=float, bytes=2, val_range=(0, 360),
                  val_range_open=(False, True), conversion='real_360_2byte',
                  default=0),
