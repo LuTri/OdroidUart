@@ -91,6 +91,7 @@ ADDITIONAL_CONFIG = [
         CmdParam('max_intensity', py_type=float, bytes=2, val_range=(0, 1),
                  conversion='per_one_2byte', default=.7),
         CmdParam('dim_steps', bytes=2, conversion='dualbyte', default=60000),
+        CmdParam('dim_delay', bytes=2, conversion='dualbyte', default=1000),
         CmdParam('val_0', bytes=2, conversion='dualbyte', default=0),
         CmdParam('val_1', bytes=2, conversion='dualbyte', default=0),
         CmdParam('val_2', bytes=2, conversion='dualbyte', default=0),
