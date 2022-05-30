@@ -88,12 +88,6 @@ class Definition:
 
 ADDITIONAL_CONFIG = [
     Definition('CMD_SOUNDTOLIGHT', 0x01, True, cmd_params=[
-        CmdParam('hue_full', py_type=float, bytes=2, val_range=(0, 360),
-                 val_range_open=(False, True), conversion='real_360_2byte',
-                 default=120.0),
-        CmdParam('target_hue', py_type=float, bytes=2, val_range=(0, 360),
-                 val_range_open=(False, True), conversion='real_360_2byte',
-                 default=0),
         CmdParam('max_intensity', py_type=float, bytes=2, val_range=(0, 1),
                  conversion='per_one_2byte', default=.7),
         CmdParam('dim_steps', bytes=2, conversion='dualbyte', default=60000),
