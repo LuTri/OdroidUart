@@ -16,6 +16,17 @@ DEFAULTS = {
     'UART_CHAR_SIZE': 8,
 }
 
+DEFAULT_STL_HUES = [
+    .0,
+    20.0,
+    62.0,
+    115.0,
+    120.0,
+    120.0,
+    120.0,
+    120.0,
+]
+
 CONSTANTS = {
     'N_COLS': 14,
     'N_ROWS': 8,
@@ -137,10 +148,14 @@ ADDITIONAL_CONFIG = [
                  default=6),
     ]),
     Definition('CMD_REBOOT', 0x07, True),
-    Definition('CMD_SET_DO_BENCHMARK', 0x08, True, cmd_params=[
-        CmdParam('status', default=1, val_range=(0, 1)),
-        CmdParam('num', default=10),
-    ]),
+    Definition('CMD_SET_STATE', 0x08, True,
+        cmd_params=[
+            CmdParam('stl_hue_{}'.format(x), bytes=4, conversion='full_float',
+                     default=DEFAULT_STL_HUES[x])
+            for x in range(8)
+        ]
+    ),
+    Definition('CND_GET_STATE', 0x09, True),
     Definition('CMD_WRITE', 0x0a, True, cmd_params=[
         CmdParam('loop_step', bytes=2, conversion='dualbyte', default=20000),
         CmdParam('font_color_rgb', bytes=3, conversion='triplebyte',
