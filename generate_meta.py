@@ -155,7 +155,7 @@ ADDITIONAL_CONFIG = [
             for x in range(8)
         ]
     ),
-    Definition('CND_GET_STATE', 0x09, True),
+    Definition('CMD_GET_STATE', 0x09, True),
     Definition('CMD_WRITE', 0x0a, True, cmd_params=[
         CmdParam('loop_step', bytes=2, conversion='dualbyte', default=20000),
         CmdParam('font_color_rgb', bytes=3, conversion='triplebyte',
@@ -173,6 +173,8 @@ ADDITIONAL_CONFIG = [
     Definition('MSG_BENCHMARK_DATA', '"BM"', True),
     Definition('MSG_BENCHMARK_START', '"BI"', True),
     Definition('MSG_BENCHMARK_STOP', '"BS"', True),
+    Definition('MSG_STATE_DATA', '"SD"', True),
+    Definition('MSG_STATE_DATA_STOP', '"DS"', True),
     Definition('MSG_RESET', '"RS"', True),
     Definition('MSG_PARITY_ERROR', '"PE"', True),
     Definition('MSG_BUFFER_OVERFLOW', '"BO"', True),
