@@ -99,24 +99,7 @@ class Definition:
 
 ADDITIONAL_CONFIG = [
     Definition('CMD_SOUNDTOLIGHT', 0x01, True, cmd_params=[
-        CmdParam('max_intensity', py_type=float, bytes=2, val_range=(0, 1),
-                 conversion='per_one_2byte', default=.7),
-        CmdParam('dim_steps', bytes=2, conversion='dualbyte', default=60000),
-        CmdParam('dim_delay', bytes=2, conversion='dualbyte', default=1000),
-        CmdParam('val_0', bytes=2, conversion='dualbyte', default=0),
-        CmdParam('val_1', bytes=2, conversion='dualbyte', default=0),
-        CmdParam('val_2', bytes=2, conversion='dualbyte', default=0),
-        CmdParam('val_3', bytes=2, conversion='dualbyte', default=0),
-        CmdParam('val_4', bytes=2, conversion='dualbyte', default=0),
-        CmdParam('val_5', bytes=2, conversion='dualbyte', default=0),
-        CmdParam('val_6', bytes=2, conversion='dualbyte', default=0),
-        CmdParam('val_7', bytes=2, conversion='dualbyte', default=0),
-        CmdParam('val_8', bytes=2, conversion='dualbyte', default=0),
-        CmdParam('val_9', bytes=2, conversion='dualbyte', default=0),
-        CmdParam('val_10', bytes=2, conversion='dualbyte', default=0),
-        CmdParam('val_11', bytes=2, conversion='dualbyte', default=0),
-        CmdParam('val_12', bytes=2, conversion='dualbyte', default=0),
-        CmdParam('val_13', bytes=2, conversion='dualbyte', default=0),
+        CmdParam('val_{}'.format(x), bytes=2, conversion='dualbyte', default=0) for x in range(14)
     ]),
     Definition('CMD_SLAVE', 0x02, True),
     Definition('CMD_MOOD', 0x03, True, cmd_params=[
@@ -148,13 +131,16 @@ ADDITIONAL_CONFIG = [
                  default=6),
     ]),
     Definition('CMD_REBOOT', 0x07, True),
-    Definition('CMD_SET_STATE', 0x08, True,
-        cmd_params=[
-            CmdParam('stl_hue_{}'.format(x), bytes=4, conversion='full_float',
-                     default=DEFAULT_STL_HUES[x])
-            for x in range(8)
-        ]
-    ),
+    Definition('CMD_SET_STATE', 0x08, True, cmd_params=[
+        CmdParam('intensity', py_type=float, bytes=2, val_range=(0, 1),
+                 conversion='per_one_2byte', default=.7),
+        CmdParam('fnc_count', bytes=2, conversion='dualbyte', default=60000),
+        CmdParam('dim_count', bytes=2, conversion='dualbyte', default=1000),
+    ] + [
+        CmdParam('stl_hue_{}'.format(x), bytes=4, conversion='full_float',
+                 default=DEFAULT_STL_HUES[x])
+        for x in range(8)
+    ]),
     Definition('CMD_GET_STATE', 0x09, True),
     Definition('CMD_WRITE', 0x0a, True, cmd_params=[
         CmdParam('loop_step', bytes=2, conversion='dualbyte', default=20000),
