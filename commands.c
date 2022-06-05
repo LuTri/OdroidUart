@@ -38,28 +38,9 @@ COMMAND_BUFFER _uart_buf2 = {
     .checksum = 0,
     .data = {0}
 };
+
 COMMAND_BUFFER* current_buffer = &_uart_buf1;
 COMMAND_BUFFER* other_buffer = &_uart_buf2;
-
-float per_cent_2byte(uint8_t h_value, uint8_t l_value) {
-	return per_one_2byte(h_value, l_value) * 100.0;
-}
-
-float per_one_2byte(uint8_t h_value, uint8_t l_value) {
-	return ((float)dualbyte(h_value, l_value)) / (float)0xFFFF;
-}
-
-float per_one_1byte(uint8_t value) {
-	return (float)value / (float)0xFF;
-}
-
-float real_360_2byte(uint8_t h_value, uint8_t l_value) {
-    return per_one_2byte(h_value, l_value) * 360.0;
-}
-
-uint16_t dualbyte(uint8_t h_value, uint8_t l_value) {
-	return (h_value << 8) | l_value;
-}
 
 void verify_framebuffer(void) {
     if (fletchers_checksum(current_buffer->data, current_buffer->size)
