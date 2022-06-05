@@ -114,6 +114,8 @@ COMMAND_BUFFER* get_next_command(uint16_t* error_counter) {
     uint8_t frame_status = 0;
     uint16_t available = uart0_available();
 
+    if (available & UART_NO_DATA) return 0;
+
     if (available & UART_OVERRUN_ERROR) {
         *error_counter += 1;
         uart0_puts(MSG_ANSWER_START);
@@ -126,12 +128,10 @@ COMMAND_BUFFER* get_next_command(uint16_t* error_counter) {
         *error_counter += 1;
         uart0_puts(MSG_ANSWER_START);
         uart0_puts(MSG_FRAME_ERROR);
-    } else if (available & UART_NO_DATA) {
-        return 0;
     } else if (available > 0) {
         frame_status = push_framebuffer(available);
         if (EXPLICIT(frame_status, UART_FLAG_UNFINISHED)) {
-            if (unfinished_flags_idx++ < UART_SKIP_UNFINISHED) {
+            if (unfinished_flags_idx++ < UART_IGNORE_EARLY_POLLS) {
                 return 0;
             } else {
                 unfinished_flags_idx = 0;

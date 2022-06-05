@@ -170,7 +170,7 @@ ADDITIONAL_CONFIG = [
     Definition('MSG_ANSWER_START', '"ANS"', True),
     Definition(None),
     Definition('UART_NUM_BENCHMARKS', 40, False),
-    Definition('UART_SKIP_UNFINISHED', 20, False),
+    Definition('UART_IGNORE_EARLY_POLLS', 20, False),
     Definition('UART_FLAG_RESET', 1, True),
     Definition('UART_FLAG_CHECKSUM_ERROR', 2, True),
     Definition('UART_FLAG_UNFINISHED', 4, True),
