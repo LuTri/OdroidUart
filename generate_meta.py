@@ -194,6 +194,8 @@ ADDITIONAL_CONFIG = [
     Definition('UART_PART_5', '(UART_PART_4 + (UART_CH_SIZE -1))'),
     Definition('UART_PART_6', '(UART_PART_5 + 1)'),
     Definition('UART_PART_7', '(UART_PART_6 + UART_DONE_SIZE)'),
+    Definition(None),
+    Definition('LOOP_CNT_MAX', 0xFF),
 ]
 
 
