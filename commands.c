@@ -109,6 +109,10 @@ COMMAND_BUFFER* _swap_framebuffer_ptr(void) {
     return _tmp;
 }
 
+uint8_t data_incoming(void) {
+    return uart0_available() & ~UART_NO_DATA;
+}
+
 COMMAND_BUFFER* get_next_command(uint16_t* error_counter) {
     static uint8_t unfinished_flags_idx = 0;
     uint8_t frame_status = 0;

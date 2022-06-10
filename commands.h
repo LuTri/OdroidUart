@@ -64,6 +64,7 @@ typedef struct {
 } COMMAND_BUFFER;
 
 COMMAND_BUFFER* get_next_command(uint16_t* error_counter);
+uint8_t data_incoming(void);
 
 typedef void (FUNCTIONALITY_LAUNCHER)(COMMAND_BUFFER* command);
 
