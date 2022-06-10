@@ -35,6 +35,23 @@
 #include "test/mockdefines.h"
 #endif
 
+#define _N_OVERHEAD 2  // e.g. extra parity bits
+
+#define T_BIT (1.0 / BAUD)
+#define T_BAUD (T_BIT * (8.0 + _N_OVERHEAD))
+
+#define N_CYCLES_BETWEEN (F_CPU / BAUD)
+
+#define T_CMD_MIN (UART_PART_7 * T_BAUD)
+#define T_CMD_MIN_US (T_CMD_MIN * 1000.0)
+
+/* approximately 0.24ms @ BAUD 500000
+ *               0.48ms @ BAUD 250000 */
+#define T_CMD_MAX ((UART_PART_7 + N_LEDS) * T_BAUD)
+#define T_CMD_MAX_US (T_CMD_MAX * 1000.0)
+/* approximately 6.95ms @ BAUD 500000
+ *              13.92ms @ BAUD 250000 */
+
 typedef struct {
     uint8_t status;
     uint8_t header[UART_HEADER_SIZE];
