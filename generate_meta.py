@@ -101,6 +101,8 @@ ADDITIONAL_CONFIG = [
     Definition('CMD_SOUNDTOLIGHT', 0x01, True, cmd_params=[
         CmdParam('val_{}'.format(x), bytes=2, conversion='dualbyte', default=0) for x in range(14)
     ]),
+    Definition('CMD_BLOCK', 0xF2, True),
+    Definition('CMD_RELEASE', 0xF3, True),
     Definition('CMD_SLAVE', 0x02, True),
     Definition('CMD_MOOD', 0x03, True, cmd_params=[
         CmdParam('pos_x'),
@@ -132,12 +134,19 @@ ADDITIONAL_CONFIG = [
     ]),
     Definition('CMD_REBOOT', 0x07, True),
     Definition('CMD_SET_STATE', 0x08, True, cmd_params=[
-        CmdParam('intensity', py_type=float, bytes=2, val_range=(0, 1),
+        CmdParam('flags', py_type=int, bytes=2, conversion='dualbyte'),
+        CmdParam('n_errors_reboot', py_type=int, bytes=2, conversion='dualbyte'),
+        CmdParam('benchmark_samples'),
+        CmdParam('reboot_time_error'),
+        CmdParam('reboot_time_general'),
+        CmdParam('current_mode'),
+        CmdParam('stl_errors', bytes=2, conversion='dualbyte'),
+        CmdParam('stl_intensity', py_type=float, bytes=2, val_range=(0, 1),
                  conversion='per_one_2byte', default=.7),
-        CmdParam('fnc_count', bytes=2, conversion='dualbyte', default=60000),
-        CmdParam('dim_count', bytes=2, conversion='dualbyte', default=1000),
+        CmdParam('stl_fnc_counts', bytes=2, conversion='dualbyte', default=60000),
+        CmdParam('stl_dim_counts', bytes=2, conversion='dualbyte', default=1000),
     ] + [
-        CmdParam('stl_hue_{}'.format(x), bytes=4, conversion='full_float',
+        CmdParam('stl_hues_{}'.format(x), bytes=4, conversion='full_float',
                  default=DEFAULT_STL_HUES[x])
         for x in range(8)
     ]),
